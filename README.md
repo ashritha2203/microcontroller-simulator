@@ -51,3 +51,79 @@ Secondary: UI & Integration
 ## Selected Program language:
 Java 
 
+##Initial System Architecture:
+The simulator will be divided into the following main components:                
+             
+                  Educational Microcontroller Simulator
+                              PIC16F72
+                                  |
+        ┌─────────────────────────┼─────────────────────────┐
+        ↓                         ↓                         ↓
+       CPU                     Memory                 Peripherals
+        |                         |                    GPIO / Timer /
+        |                         |                    Interrupts
+        └─────────────────────────┼─────────────────────────┘
+                                  ↓
+                         Process Management
+                                  |
+                                  ↓
+                             Scheduler
+                         /       |        \
+                      FCFS   Round Robin  Priority
+                                  |
+                                  ↓
+                       User Interface & Results
+
+
+## Initial Development Plan:
+
+The project will be developed step by step. The main planned stages are:
+
+### Week 1 – Planning and Setup
+
+* Set up the GitHub repository and project structure.
+* Divide responsibilities among team members.
+* Study the PIC16F72 architecture.
+* Finalize Java as the programming language.
+* Prepare the initial simulator architecture.
+
+### Week 2 – CPU and Memory
+
+* Design and implement the basic CPU components.
+* Implement registers, Program Counter, flags, and instruction execution.
+* Implement program memory, data memory, and stack.
+
+### Week 3 – Peripherals
+
+* Implement the selected instruction set.
+* Add basic GPIO functionality.
+* Add timer functionality.
+* Add interrupt handling.
+
+### Week 4 – Process Management
+
+* Implement the Process Control Block (PCB).
+* Implement process states and process creation.
+* Implement the ready queue and required data structures.
+* Implement context switching.
+
+### Week 5 – Scheduling
+
+* Implement FCFS scheduling.
+* Implement Round Robin scheduling.
+* Implement Priority scheduling.
+* Calculate scheduling performance metrics.
+
+### Week 6 – Integration and Testing
+
+* Connect all major modules.
+* Add program loading, run, reset, and single-step features.
+* Test the complete simulator.
+* Display performance results such as waiting time, turnaround time, response time, context switches, and CPU utilization.
+
+The development plan is an initial plan and may be adjusted as the project progresses.
+
+
+
+
+
