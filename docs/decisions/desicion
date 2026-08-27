@@ -1,9 +1,24 @@
-DATE:
-Meeting number:
-Participants:
-Agenda:
-Discussion:
-Decisions:
+DATE:25-08-2026
+Meeting number:1
+Participants:4
+Agenda:assigning the task based on topic given.
+Discussion:the sent pdf was discussed ,we took some time for understanding it and the work was divide to each of them
+Decisions:The work was categories and the final `decision was made during meeting .
 Action items:
-Student 1:
-S
+ CPU/register organization
+ Program Counter
+ Stack Pointer
+ Status/flag information
+ Memory organization
+ Stack mechanism
+ Instruction categories
+ GPIO
+ Timer
+ Interrupt mechanism
+this was assigned
+Student 1: CPU/register organization, Program Counter.
+Student 2: Stack Pointer,GPIO, Memory organization. 
+Student 3: Status/flag information,Interrupt mechanism,Instruction categories.
+Student 4: Stack mechanism, Timer.
+
+Next meeting :30-08-2026
