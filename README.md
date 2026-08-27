@@ -1,5 +1,5 @@
 # microcontroller-simulator
- Project Title:
+## Project Title:
 Educational Microcontroller Simulator with Process Scheduling
 
 Problem Objective:
