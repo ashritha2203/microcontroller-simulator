@@ -8,7 +8,7 @@ The goal is to build a simple simulator that shows how a microcontroller runs pr
 ## Problem Statement:
 This project simulates the 
 
-***Project Scope***
+Project Scope:
 
 Microcontroller being stimulated:
 PIC16F72 - an 8-bit microcontroller with 35 instructions, 2000 words of program memory, banked data memory, an 8-level hardware stack, three timers, and an 8-channel analog-to-digital converter.
