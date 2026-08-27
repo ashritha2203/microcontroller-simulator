@@ -36,12 +36,12 @@ Primary: CPU & Instruction Execution
 Secondary: Integration & GitHub
 
 Pooja P Poojary
-Primary: Data Structures & Process Management
-Secondary: Testing
-
-Mohammed Nihal
 Primary: Memory & Stack
 Secondary: CPU support
+
+Mohammed Nihal
+Primary: Data Structures & Process Management
+Secondary: Testing
 
 Nithin
 Primary: OS Scheduling & Context Switching
