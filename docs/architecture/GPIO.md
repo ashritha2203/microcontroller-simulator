@@ -10,7 +10,7 @@ Some PORTC pins double up as peripheral pins too, so they're not always free to 
 Reading a PORT register shows the current state of its pins. Writing to one sets the output value, but that only actually shows up if the pin is set as an output in the first place.
 ##### Analog Pins
 A few PORTA pins can also work as analog inputs instead of plain digital ones, RA0 to RA3 map to AN0-AN3, and RA5 maps to AN4, giving 5 analog channels total. Whether a pin acts as analog or digital is controlled by the ADCON1 register, and its TRISA bit still needs to be set correctly too.
- ###### Other Pin Jobs
+ ##### Other Pin Jobs
 Some pins do more than one thing:
 - RA4 can act as an external clock for Timer 0
 - RA5 can double as AN4 or the slave select (SS) pin
