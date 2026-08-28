@@ -82,23 +82,21 @@ The registers are:
 
 The basic rule is:
 
-```text
 TRIS bit = 1  → Input
 TRIS bit = 0  → Output
-```
+
 
 For example:
 
-```text
+
 TRISB = 11110000
-```
+
 
 means:
 
-```text
 RB7–RB4 → Inputs
 RB3–RB0 → Outputs
-```
+
 
 The PIC16F72 datasheet specifies this same input/output selection behavior for PORTA, PORTB, and PORTC.
 
@@ -106,15 +104,14 @@ The PIC16F72 datasheet specifies this same input/output selection behavior for P
 
 ## Reading and Writing GPIO
 
-The `PORT` registers are used to access the port pins.
+The PORT registers are used to access the port pins.
 
 For example:
 
-```text
 PORTA → RA0–RA5
 PORTB → RB0–RB7
 PORTC → RC0–RC7
-```
+
 
 When a PORT register is **read**, the current state of the port pins is read.
 
@@ -195,6 +192,7 @@ This means that the simulator should be able to represent the basic GPIO functio
 The simulator can represent the three PIC16F72 ports separately.
 
 A simple design can be:
+
                 GPIO Module
                      |
           ┌──────────┼──────────┐
