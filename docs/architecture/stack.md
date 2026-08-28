@@ -27,7 +27,7 @@ Two characteristics make the PIC16F72 hardware stack different from a convention
 
 1. No accessible Stack Pointer
 
-   The PIC16F72 does not provide a programmer-accessible Stack Pointer register. The hardware manages the stack automatically during operations involving `CALL`, `RETURN`, `RETLW`, and `RETFIE`.
+   The PIC16F72 does not provide a programmer-accessible Stack Pointer register. The hardware manages the stack automatically during operations involving CALL, RETURN, RETLW, and RETFIE.
 
 2. Separate from program and data memory
    
