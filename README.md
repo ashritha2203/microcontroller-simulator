@@ -51,29 +51,25 @@ Secondary: UI & Integration
 ## Selected Program language:
 Java 
 
-##Initial System Architecture:
+## Initial System Architecture:
 The simulator will be divided into the following main components:                
-             
-                  Educational Microcontroller Simulator
-                              PIC16F72
-                                  |
-        ┌─────────────────────────┼─────────────────────────┐
-        ↓                         ↓                         ↓
-       CPU                     Memory                 Peripherals
-        |                         |                    GPIO / Timer /
-        |                         |                    Interrupts
-        └─────────────────────────┼─────────────────────────┘
-                                  ↓
-                         Process Management
-                                  |
-                                  ↓
-                             Scheduler
-                         /       |        \
-                      FCFS   Round Robin  Priority
-                                  |
-                                  ↓
-                       User Interface & Results
 
+```mermaid
+graph TD
+    A[Microcontroller Simulator<br/>PIC16F72] --> B[CPU]
+    A --> C[Memory]
+    A --> D[Peripherals<br/>GPIO / Timer / Interrupt]
+    B --> E[Process Management]
+    C --> E
+    D --> E
+    E --> F[Scheduler<br/>FCFS / Round Robin / Priority]
+    F --> G[FCFS]
+    F --> H[Round Robin]
+    F --> I[Priority]
+    G --> J[User Interface & Results]
+    H --> J
+    I --> J
+```
 
 ## Initial Development Plan:
 
