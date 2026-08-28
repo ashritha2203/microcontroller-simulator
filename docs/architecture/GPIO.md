@@ -29,13 +29,11 @@ When a pin is configured as an input, the microcontroller can read the signal pr
 
 For example:
 
-```text
 Button
    ↓
 GPIO Input Pin
    ↓
 PIC16F72
-```
 
 The program can check whether the input is in a particular digital state.
 
@@ -45,13 +43,12 @@ When a pin is configured as an output, the microcontroller can control the signa
 
 For example:
 
-```text
 PIC16F72
    ↓
 GPIO Output Pin
    ↓
 LED
-```
+
 
 The program can set the output to the required digital state.
 
@@ -61,13 +58,13 @@ The program can set the output to the required digital state.
 
 The PIC16F72 has three GPIO ports.
 
-| Port    | Width | Pins    |
-| ------- | ----: | ------- |
-| `PORTA` | 6-bit | RA0–RA5 |
-| `PORTB` | 8-bit | RB0–RB7 |
-| `PORTC` | 8-bit | RC0–RC7 |
+| Port  | Width | Pins    |
+| ------| ----- | ------- |
+| PORTA | 6-bit | RA0–RA5 |
+| PORTB | 8-bit | RB0–RB7 |
+| PORTC | 8-bit | RC0–RC7 |
 
-`PORTA` is a 6-bit bidirectional port, while `PORTB` and `PORTC` are 8-bit bidirectional ports.
+PORTA is a 6-bit bidirectional port, while PORTB and PORTC are 8-bit bidirectional ports.
 
 Some of these pins also have other functions. For example, PORTC pins can be used by peripheral modules, so a pin may not always be available as a normal GPIO pin when a peripheral function is enabled.
 
@@ -79,9 +76,9 @@ Each port has a corresponding **TRIS register** that controls whether its pins w
 
 The registers are:
 
-* `TRISA` → controls PORTA
-* `TRISB` → controls PORTB
-* `TRISC` → controls PORTC
+* TRISA → controls PORTA
+* TRISB → controls PORTB
+* TRISC → controls PORTC
 
 The basic rule is:
 
@@ -119,13 +116,12 @@ PORTB → RB0–RB7
 PORTC → RC0–RC7
 ```
 
-When a `PORT` register is **read**, the current state of the port pins is read.
+When a PORT register is **read**, the current state of the port pins is read.
 
 When a value is **written** to a port, the value is written to the port's output latch. The actual pin behavior depends on whether the corresponding pins are configured as inputs or outputs.
 
 A simple view is:
 
-```text
 Input:
 
 External Signal
@@ -148,7 +144,6 @@ Output:
    GPIO Pin
       ↓
 External Device
-```
 
 ---
 
@@ -158,27 +153,24 @@ Some PORTA pins can also be used as analog inputs for the built-in A/D converter
 
 The PIC16F72 provides the following analog input channels:
 
-```text
 RA0 → AN0
 RA1 → AN1
 RA2 → AN2
 RA3 → AN3 / VREF
 RA5 → AN4
-```
+
 
 This gives the PIC16F72 **five analog input channels**.
 
-The `ADCON1` register is used to select whether the relevant pins operate as analog inputs or digital I/O. When a pin is being used as an analog input, its corresponding `TRISA` bit must be set as required by the device.
+The ADCON1 register is used to select whether the relevant pins operate as analog inputs or digital I/O. When a pin is being used as an analog input, its corresponding TRISA bit must be set as required by the device.
 
 So, a PORTA pin may have more than one possible function.
 
 For example:
 
-```text
 RA0
  ├── Digital I/O
  └── Analog Input (AN0)
-```
 
 ---
 
@@ -188,10 +180,10 @@ Some GPIO pins have additional functions connected to other modules.
 
 For example:
 
-* `RA4` can also be used as the external clock input for Timer0.
-* `RA5` can also be used as `AN4` or as the serial peripheral slave-select input.
-* PORTB includes the external interrupt pin `RB0/INT`.
-* `RB7–RB4` support interrupt-on-change functionality.
+* RA4 can also be used as the external clock input for Timer0.
+* RA5 can also be used as AN4 or as the serial peripheral slave-select input.
+* PORTB includes the external interrupt pin RB0/INT.
+* RB7–RB4 support interrupt-on-change functionality.
 * PORTC pins are shared with several peripheral functions.
 
 This means that the simulator should be able to represent the basic GPIO function while also allowing the relevant peripheral functions to be considered later.
@@ -203,8 +195,6 @@ This means that the simulator should be able to represent the basic GPIO functio
 The simulator can represent the three PIC16F72 ports separately.
 
 A simple design can be:
-
-```text
                 GPIO Module
                      |
           ┌──────────┼──────────┐
@@ -214,12 +204,11 @@ A simple design can be:
        TRISA       TRISB       TRISC
           |          |          |
        RA0–RA5     RB0–RB7    RC0–RC7
-```
 
 The planned GPIO model can include:
 
-* `PORTA`, `PORTB`, and `PORTC`
-* `TRISA`, `TRISB`, and `TRISC`
+* PORTA, PORTB, and PORTC
+* TRISA, TRISB, and TRISC
 * Input/output state of each pin
 * Reading the state of input pins
 * Writing output values
@@ -231,11 +220,10 @@ The exact Java classes and data structures can be decided when the GPIO module i
 
 ## Example
 
-Suppose the simulator wants to make `RB0` an output and set it to a high state.
+Suppose the simulator wants to make RB0 an output and set it to a high state.
 
 The process can be represented as:
 
-```text
 TRISB bit 0 = 0
         ↓
 RB0 configured as output
@@ -243,11 +231,9 @@ RB0 configured as output
 Write output value to PORTB
         ↓
 RB0 output changes to the selected state
-```
 
-Similarly, if `RB0` is configured as an input:
+Similarly, if RB0 is configured as an input:
 
-```text
 TRISB bit 0 = 1
         ↓
 RB0 configured as input
@@ -257,7 +243,6 @@ External input is applied
 CPU reads PORTB
         ↓
 RB0 state is obtained
-```
 
 These operations can later be shown in the simulator interface.
 
@@ -287,14 +272,12 @@ This will connect the PIC16F72 GPIO hardware with the peripheral part of the pro
 
 The PIC16F72 has three GPIO ports: **PORTA, PORTB, and PORTC**. PORTA has 6 pins, while PORTB and PORTC have 8 pins each.
 
-The `TRISA`, `TRISB`, and `TRISC` registers are used to configure the direction of the pins:
+The TRISA, TRISB, and TRISC registers are used to configure the direction of the pins:
 
-```text
 1 → Input
 0 → Output
-```
 
-The `PORTA`, `PORTB`, and `PORTC` registers are used to read the port pins and write output values.
+The PORTA, PORTB, and PORTC registers are used to read the port pins and write output values.
 
 Some PORTA pins can also work as analog inputs, giving the PIC16F72 **five analog input channels**. Several pins also have alternate functions connected to timers, interrupts, and other peripherals.
 
