@@ -1,4 +1,4 @@
-# CPU/REGISTER ORGANIZATION #
+# CPU/REGISTER ORGANIZATION 
 CPU/Register Organization means how the registers inside the CPU are arranged and worked together to process data quickly.
 Simple explanation:
 The CPU takes the needed data from memory and keeps it in the registers.
