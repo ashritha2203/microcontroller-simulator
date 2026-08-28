@@ -1,14 +1,14 @@
 ##Program Counter (PC)
 Program Counter (PC) is a register in the CPU that stores the address of the next instruction to be executed. 
 It updates automatically after each instruction or when the program jumps to the another location.
-Simple Explanation:
+##Simple Explanation:
 It stores the address of the next instruction.
 After the CPU executes one instruction, then the PC moves to the next instruction.
-If the program jumps to another place (using a loop or jump the statement), the PC changes to that new address.
-Functions of the Program Counter.
+If the program jumps to another place (using a loop or jump  statement), the PC changes to that new address.
+##Functions of the Program Counter:
 Holds the address of the next instruction.
-The PC remembers where the next instruction is stored in the memory.
-Sends this address to memory.
+The PC remembers where the next instruction is stored in the  memory.
+Then Sends this address to memory.
 The PC tells the memory which instruction the CPU should take the next one.
 Then it Automatically moves to the next instruction set.
 After one instruction is completed, the PC moves to the next instruction automatically.
