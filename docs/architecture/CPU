@@ -13,3 +13,11 @@ then Register R2 stores 3.
 The ALU adds the two numbers (5 + 3 = 8).
 The result 8 is stored in the Register R3 or saved to the memory.
 The Control Unit (CU) controls all these steps which are done.
+WORKING IN FLOW DIAGRAM:
+Simple flow: Memory → Registers → ALU → Register → Memory.
+SIMPLE BLOCK DIAGRAM:
+Registers → Bus → ALU → Destination Register
+      ↑                    ↓
+      └── Control Unit ────┘
+
+      
