@@ -1,1 +1,7 @@
-
+### CPU/REGISTER ORGANIZATION ###
+CPU/Register Organization means how the registers inside the CPU are arranged and work together to process data quickly.
+Simple explanation:
+The CPU takes the required data from memory and keeps it in registers.
+The ALU does calculations (like addition or subtraction) using the data in the registers.
+The answer is kept in a register and can be saved back to memory if needed.
+The Control Unit (CU) tells all the parts what to do and when to do it.
