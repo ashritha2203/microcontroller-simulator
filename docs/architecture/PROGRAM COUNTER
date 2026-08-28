@@ -1,4 +1,4 @@
-## Program Counter (PC)
+##Program Counter (PC)
 Program Counter (PC) is a register in the CPU that stores the address of the next instruction to be executed. 
 It updates automatically after each instruction or when the program jumps to the another location.
 Simple Explanation:
