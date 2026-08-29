@@ -25,8 +25,11 @@ PIC16F72 - an 8-bit microcontroller with 35 instructions, 2000 words of program 
 
 ## Team Members:
 Team leader: Ashritha.K-25190108
+
 Pooja P Poojary - 25190137
+
 Mohammed Nihal - 25190127
+
 Nithin - 25190135
 
 ## Team Responsibilities:
