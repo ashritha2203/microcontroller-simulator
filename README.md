@@ -52,7 +52,7 @@ Secondary: UI & Integration
 
 
 ## Selected Program language:
-Java 
+JAVA
 
 ## Initial System Architecture:
 The simulator will be divided into the following main components:                
