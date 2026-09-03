@@ -1,0 +1,23 @@
+# CPU/REGISTER ORGANIZATION 
+CPU/Register Organization means how the registers inside the CPU are arranged and worked together to process data quickly.
+Simple explanation:
+The CPU takes the needed data from memory and keeps it in the registers.
+so in registers it stores the data temporarily.
+The ALU does the calculations (like add or sub) using the data in the registers.
+Then answer is kept in a register and can be saved back to the memory .
+Then Control Unit (CU) tells all the parts what to do and when to do it.
+Example of CPU/Register Organization:
+Suppose we want to add 5 + 3.
+First thing the Register R1 stores 5.
+then Register R2 stores 3.
+The ALU adds the two numbers (5 + 3 = 8).
+The result 8 is stored in the Register R3 or saved to the memory.
+The Control Unit (CU) controls all these steps which are done.
+WORKING IN FLOW DIAGRAM:
+Simple flow: Memory → Registers → ALU → Register → Memory.
+SIMPLE BLOCK DIAGRAM:
+Registers → Bus → ALU → Destination Register
+      ↑                    ↓
+      └── Control Unit ────┘
+
+      

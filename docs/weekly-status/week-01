@@ -1,0 +1,62 @@
+Week 1 Status update
+ Planned Work
+ Set up the GitHub repository and folder structure
+ Study the assigned PIC16F72 microcontroller
+ Finalize the programming language
+ Prepare the initial system architecture
+ Divide responsibilities among team members
+
+Completed Work
+Created a public GitHub repository with the required folder structure
+(docs, src, tests, programs)
+Created the week-01 branch for Week 1 work
+Studied the PIC16F72 architecture and its major components
+Studied memory organization, hardware stack, GPIO, CPU components,timers, and interrupts.
+Finalized Java as the programming language for the project
+Prepared the initial system architecture
+Divided responsibilities among the team members
+Updated the README with the project details, architecture, andinitial development plan
+Added technical documentation for the assigned PIC16F72 topics
+
+Pending Work
+Detailed CPU instruction design
+Detailed memory and stack implementation
+Further implementation of the simulator modules
+
+Issues Encountered
+The detailed implementation of some modules has not started yet.
+Some technical decisions will need to be finalized during the implementation phase.
+
+Decisions Made
+Java was selected as the programming language.
+Initial responsibilities were divided among the team members.
+The initial system architecture was documented in the README.
+Week 1 work is being maintained in the `week-01` branch.
+
+Individual Contributions
+Ashritha K — Team Leader
+CPU and Instruction Execution study
+Integration and GitHub setup
+Team coordination
+
+Pooja P Poojary
+Memory Organization study and documentation
+Hardware Stack study and documentation
+GPIO study and documentation
+
+Mohammed Nihal
+Data Structures and Process Management study
+Process-related documentation
+Testing support
+
+Nithin
+OS Scheduling and Context Switching study
+Scheduling-related documentation
+UI and Integration support
+
+Work Accepted
+GitHub repository and folder structure
+README
+Initial system architecture
+Initial development plan
+PIC16F72 architecture documentation
