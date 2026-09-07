@@ -1,0 +1,3 @@
+weekly status report
+work completed:we created the CPU state.Added the program counter(PC).we started writing the instructions.started fetch(), decode(), execute().we also started making UI and tested some of the simulator.
+CURRENT STATUS:
