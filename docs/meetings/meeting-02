@@ -1,0 +1,42 @@
+# MINUTES OF MEETING – WEEK 2
+
+**Date:** 01 September 2026  
+**Meeting No.:** 2
+
+## Participants
+
+Ashritha, Nithin, Nihal, Pooja
+
+## Agenda
+
+- Discuss the work done in Week 2.
+- Check the progress of each member.
+- Discuss what to do next.
+
+## Discussion
+
+- We discussed the progress of our simulator project.
+- Ashritha's CPU implementation work was discussed.
+- Nithin's UI and testing work using Java Swing was discussed.
+- Pooja's instruction implementation work was discussed.
+- Nihal's fetch and decode work was discussed.
+- We also discussed how all the modules will be connected together.
+- Testing and fixing the errors were also discussed.
+
+## Decisions
+
+- Continue working on the simulator.
+- Complete the assigned parts.
+- Combine all the modules after completing them.
+- Test the complete simulator and fix any errors.
+
+## Action Items
+
+- **Ashritha:** CPU implementation
+- **Nithin:** UI and testing (Java Swing)
+- **Pooja:** Instruction implementation
+- **Nihal:** Fetch and decode
+
+## Next Meeting
+
+Check the progress of the implementation and discuss how to integrate all the modules.
