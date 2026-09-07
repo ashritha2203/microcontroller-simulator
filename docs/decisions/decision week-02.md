@@ -13,4 +13,4 @@ what to show in UI , decided who will do each task
 ashritha=CPU state
 pooja= instructions
 nihal= fetch, decode, execute.
-nithin= documenting
+nithin= UI
