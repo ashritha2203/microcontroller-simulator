@@ -4,10 +4,10 @@ These test cases check whether all 8 implemented instructions are working correc
 |-----|-----|-----|-----|-----|
 |TC01 |	MOVLW 10| W = 10	| W = 10(confirmed via chain below) |	PASS |
 |TC02 | MOVWF 20 (W=10) |	registers[20] = 10 |	registers[20] =     10 |	PASS |
-|TC03 |	ADDWF 20, false (W=5, registers[20]=10) |	W=15 |	W=15 |	PASS |
-|TC04 |	SUBWF 0, false (registers[0]=8, W=3) |	registers[0] = 5 |	registers[0] = 5 |	PASS |
-|TC05 |	ANDWF 0, false (W=6, registers[0]=3) |	W = 2 |	W = 2 |	PASS |
-|TC06 |	INCF 21, false (registers[21]=15) |	registers[21] = 16 |	registers[21] = 16 |	PASS |
+|TC03 |	ADDWF 20, (W=5, registers[20]=10) |	W=15 |	W=15 |	PASS |
+|TC04 |	SUBWF 0, (registers[0]=8, W=3) |	registers[0] = 5 |	registers[0] = 5 |	PASS |
+|TC05 |	ANDWF 0, (W=6, registers[0]=3) |	W = 2 |	W = 2 |	PASS |
+|TC06 |	INCF 21, (registers[21]=15) |	registers[21] = 16 |	registers[21] = 16 |	PASS |
 |TC07 |	GOTO 10 (PC=5) |	PC = 10	| PC = 10 |	PASS |
 |TC08 |	SLEEP |	halted = true |	halted = true |	PASS |
 
