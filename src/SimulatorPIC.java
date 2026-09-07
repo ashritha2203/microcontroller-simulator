@@ -15,7 +15,7 @@ public class SimulatorPIC {
         cpu.reset();
         String[] programMemory = cpu.getProgramMemory();
         for (int i = 0; i < programMemory.length; i++) {
-            programMemory[i] = (i < lines.length) ? lines[i] : "NOP";
+            programMemory[i] = (i < lines.length) ? lines[i] : "SLEEP";
         }
     }
 

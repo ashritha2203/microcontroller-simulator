@@ -22,5 +22,24 @@ public class Main {
         System.out.println("registers[21] = " + cpu.getRegister(21));
         System.out.println("Zero Flag = " + cpu.getZeroFlag());
         System.out.println("Halted = " + cpu.isHalted());
+
+        System.out.println("---- Individual instruction tests ----");
+
+        CPU t1 = new CPU();
+        t1.setW(3);
+        t1.setRegister(0, 8);
+        InstructionSet.SUBWF(0, t1);
+        System.out.println("TC04 SUBWF: registers[0] = " + t1.getRegister(0));
+
+        CPU t2 = new CPU();
+        t2.setW(6);
+        t2.setRegister(0, 3);
+        InstructionSet.ANDWF(0, t2);
+        System.out.println("TC05 ANDWF: W = " + t2.getW());
+
+        CPU t3 = new CPU();
+        t3.setPC(5);
+        InstructionSet.GOTO(10, t3);
+        System.out.println("TC07 GOTO: PC = " + t3.getPC());
     }
 }

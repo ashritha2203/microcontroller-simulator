@@ -7,6 +7,8 @@ public class SimulatorUI extends JFrame {
     private JTextField wField;
     private JTextField pcField;
     private JLabel zeroFlagLabel;
+    private JLabel carryFlagLabel;
+    private JLabel haltedLabel;
     private JTable registerTable;
 
     public SimulatorUI(SimulatorPIC controller) {
@@ -28,12 +30,12 @@ public class SimulatorUI extends JFrame {
         JPanel centerPanel = new JPanel(new GridLayout(1, 2));
 
         codeArea = new JTextArea(10, 20);
-        codeArea.setText("MOVLW 10\nMOVWF 20\nMOVLW 5\nADDWF 20\nSLEEP");
+        codeArea.setText("MOVLW 10\nMOVWF 20\nMOVLW 5\nADDWF 20\nMOVWF 21\nSUBWF 20\nANDWF 21\nINCF 21\nGOTO 9\nSLEEP");
         centerPanel.add(new JScrollPane(codeArea));
 
         String[] columnNames = {"Register", "Value"};
-        Object[][] data = new Object[16][2];
-        for (int i = 0; i < 16; i++) {
+        Object[][] data = new Object[30][2];
+        for (int i = 0; i < 30; i++) {
             data[i][0] = "RAM [" + i + "]";
             data[i][1] = 0;
         }
@@ -48,12 +50,16 @@ public class SimulatorUI extends JFrame {
         pcField = new JTextField(5);
         pcField.setEditable(false);
         zeroFlagLabel = new JLabel("Zero: false");
+        carryFlagLabel = new JLabel("Carry: false");
+        haltedLabel = new JLabel("Halted: false");
 
         statusPanel.add(new JLabel("W:"));
         statusPanel.add(wField);
         statusPanel.add(new JLabel("PC:"));
         statusPanel.add(pcField);
         statusPanel.add(zeroFlagLabel);
+        statusPanel.add(carryFlagLabel);
+        statusPanel.add(haltedLabel);
         add(statusPanel, BorderLayout.SOUTH);
 
         stepButton.addActionListener(e -> {
@@ -86,9 +92,11 @@ public class SimulatorUI extends JFrame {
         wField.setText(String.valueOf(cpu.getW()));
         pcField.setText(String.valueOf(cpu.getPC()));
         zeroFlagLabel.setText("Zero: " + cpu.getZeroFlag());
+        carryFlagLabel.setText("Carry: " + cpu.getCarryFlag());
+        haltedLabel.setText("Halted: " + cpu.isHalted());
 
         int[] regs = cpu.getRegisters();
-        for (int i = 0; i < 16; i++) {
+        for (int i = 0; i < 30; i++) {
             registerTable.setValueAt(regs[i], i, 1);
         }
     }
