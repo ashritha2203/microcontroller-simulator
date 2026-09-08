@@ -4,6 +4,7 @@ import java.awt.*;
 public class SimulatorUI extends JFrame {
     private SimulatorPIC controller;
     private JTextArea codeArea;
+    private JTextArea traceArea;
     private JTextField wField;
     private JTextField pcField;
     private JLabel zeroFlagLabel;
@@ -14,20 +15,22 @@ public class SimulatorUI extends JFrame {
     public SimulatorUI(SimulatorPIC controller) {
         this.controller = controller;
         setTitle("PIC CPU Simulator");
-        setSize(700, 500);
+        setSize(900, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
         JPanel controlPanel = new JPanel();
+        JButton loadButton = new JButton("Load");
         JButton stepButton = new JButton("Step");
         JButton runButton = new JButton("Run");
         JButton resetButton = new JButton("Reset");
+        controlPanel.add(loadButton);
         controlPanel.add(stepButton);
         controlPanel.add(runButton);
         controlPanel.add(resetButton);
         add(controlPanel, BorderLayout.NORTH);
 
-        JPanel centerPanel = new JPanel(new GridLayout(1, 2));
+        JPanel centerPanel = new JPanel(new GridLayout(1, 3));
 
         codeArea = new JTextArea(10, 20);
         codeArea.setText("MOVLW 10\nMOVWF 20\nMOVLW 5\nADDWF 20\nMOVWF 21\nSUBWF 20\nANDWF 21\nINCF 21\nGOTO 9\nSLEEP");
@@ -41,6 +44,11 @@ public class SimulatorUI extends JFrame {
         }
         registerTable = new JTable(data, columnNames);
         centerPanel.add(new JScrollPane(registerTable));
+
+        traceArea = new JTextArea();
+        traceArea.setEditable(false);
+        traceArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        centerPanel.add(new JScrollPane(traceArea));
 
         add(centerPanel, BorderLayout.CENTER);
 
@@ -62,23 +70,31 @@ public class SimulatorUI extends JFrame {
         statusPanel.add(haltedLabel);
         add(statusPanel, BorderLayout.SOUTH);
 
-        stepButton.addActionListener(e -> {
+        loadButton.addActionListener(e -> {
             loadProgramFromEditor();
-            controller.step();
+            traceArea.setText("Program loaded.\n");
+            updateUIState();
+        });
+
+        stepButton.addActionListener(e -> {
+            String trace = controller.step();
+            traceArea.setText(trace);
             updateUIState();
         });
 
         runButton.addActionListener(e -> {
-            loadProgramFromEditor();
             controller.run();
+            traceArea.setText("Program ran to completion.\nHalted = " + controller.getCpu().isHalted());
             updateUIState();
         });
 
         resetButton.addActionListener(e -> {
             controller.reset();
+            traceArea.setText("Simulator reset.\n");
             updateUIState();
         });
 
+        loadProgramFromEditor();
         updateUIState();
     }
 
