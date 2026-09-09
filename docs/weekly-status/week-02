@@ -1,0 +1,4 @@
+WEEKLY STATUS REPORT
+WORK COMPLETED:we created the CPU state.Added the program counter(PC).we started writing the instructions.started fetch(), decode(), execute().we also started making UI and tested some of the simulator.
+CURRENT STATUS:The basic simulator is working,some instructions are completed,UI is still developed.
+PROBLEMS:we found a few code errors.instructions testing.
