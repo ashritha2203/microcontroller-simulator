@@ -16,7 +16,7 @@ public class SimulatorUI extends JFrame {
 
     public SimulatorUI(SimulatorPIC controller) {
         this.controller = controller;
-        setTitle("PIC CPU Simulator");
+        setTitle("PIC16F72 Educational Microcontroller Simulator");
         setSize(1000, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
@@ -40,7 +40,9 @@ public class SimulatorUI extends JFrame {
 
         codeArea = new JTextArea(10, 20);
         codeArea.setText("MOVLW 10\nMOVWF 20\nMOVLW 5\nADDWF 20\nMOVWF 21\nSUBWF 20\nANDWF 21\nINCF 21\nGOTO 9\nSLEEP");
-        centerPanel.add(new JScrollPane(codeArea));
+        JScrollPane codeScroll = new JScrollPane(codeArea);
+        codeScroll.setBorder(BorderFactory.createTitledBorder("Program Memory (Editable)"));
+        centerPanel.add(codeScroll);
 
         String[] columnNames = {"Register", "Value"};
         Object[][] data = new Object[60][2];
@@ -49,12 +51,16 @@ public class SimulatorUI extends JFrame {
             data[i][1] = 0;
         }
         registerTable = new JTable(data, columnNames);
-        centerPanel.add(new JScrollPane(registerTable));
+        JScrollPane regScroll = new JScrollPane(registerTable);
+        regScroll.setBorder(BorderFactory.createTitledBorder("Data Memory"));
+        centerPanel.add(regScroll);
 
         traceArea = new JTextArea();
         traceArea.setEditable(false);
         traceArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        centerPanel.add(new JScrollPane(traceArea));
+        JScrollPane traceScroll = new JScrollPane(traceArea);
+        traceScroll.setBorder(BorderFactory.createTitledBorder("Execution Trace"));
+        centerPanel.add(traceScroll);
 
         add(centerPanel, BorderLayout.CENTER);
 
