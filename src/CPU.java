@@ -1,4 +1,11 @@
 public class CPU {
+
+    private Memory memory;
+    private Stack stack;
+    private  Queue queue;
+
+    
+
     private int W;
     private int[] registers;
     private int pc;
@@ -9,6 +16,9 @@ public class CPU {
     private String[] programMemory;
 
     public CPU() {
+        memory =new Memory();
+        stack=new Stack(256);
+        queue=new Queue(256);
         registers = new int[256];
         programMemory = new String[256];
         reset();
@@ -44,5 +54,37 @@ public class CPU {
     public void setHalted(boolean value) { halted = value; }
 
     public void incrementPC() { pc++; }
-    public void setPC(int address) { pc = address; }
+    public void setPC(int address) {
+         pc = address;
+          }
+          public void writeMemory(int address, int value) {
+    memory.write(address, value);
+}
+
+public int readMemory(int address) {
+    return memory.read(address);
+}
+public void push(int value){
+stack.push(value);
+}
+public int pop(){
+    return stack.pop();
+}
+public int getSP(){
+    return stack.getSP();
+}
+public void displayStack(){
+    stack.displayStack();
+}
+public void enqueue(int value) {
+    queue.enqueue(value);
+}
+
+public int dequeue() {
+    return queue.dequeue();
+}
+
+public void displayQueue() {
+    queue.displayQueue();
+}
 }
