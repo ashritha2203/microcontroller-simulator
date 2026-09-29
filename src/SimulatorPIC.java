@@ -1,14 +1,20 @@
 public class SimulatorPIC {
     private CPU cpu;
     private Processor processor;
+    private Queue queue;
 
     public SimulatorPIC() {
         cpu = new CPU();
         processor = new Processor(cpu);
+        queue = new Queue(5);
     }
 
     public CPU getCpu() {
         return cpu;
+    }
+
+    public Queue getQueue() {
+        return queue;
     }
 
     public void loadProgram(String[] lines) {
@@ -51,4 +57,5 @@ public class SimulatorPIC {
     public void reset() {
         cpu.reset();
     }
+    
 }
