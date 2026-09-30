@@ -1,4 +1,4 @@
-public class QueueTest {
+public class CPUQueueTest {
 
     public static void main(String[] args) {
 
@@ -11,12 +11,12 @@ public class QueueTest {
         queue.enqueue(30);
 
         // Display queue
-        queue.displayQueue();
+        queue.printStatus();
 
         // Dequeue operation
         queue.dequeue();
 
         // Display queue again
-        queue.displayQueue();
+        queue.printStatus();
     }
 }
