@@ -5,17 +5,19 @@ public class SimulatorUI extends JFrame {
     private SimulatorPIC controller;
     private JTextArea codeArea;
     private JTextArea traceArea;
+    private JTextArea queueArea;
     private JTextField wField;
     private JTextField pcField;
     private JLabel zeroFlagLabel;
     private JLabel carryFlagLabel;
     private JLabel haltedLabel;
     private JTable registerTable;
+    private int nextEnqueueValue = 10;
 
     public SimulatorUI(SimulatorPIC controller) {
         this.controller = controller;
-        setTitle("PIC CPU Simulator");
-        setSize(900, 600);
+        setTitle("PIC16F72 Educational Microcontroller Simulator");
+        setSize(1000, 650);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
@@ -24,33 +26,45 @@ public class SimulatorUI extends JFrame {
         JButton stepButton = new JButton("Step");
         JButton runButton = new JButton("Run");
         JButton resetButton = new JButton("Reset");
+        JButton enqueueButton = new JButton("Enqueue 10");
+        JButton dequeueButton = new JButton("Dequeue");
         controlPanel.add(loadButton);
         controlPanel.add(stepButton);
         controlPanel.add(runButton);
         controlPanel.add(resetButton);
+        controlPanel.add(enqueueButton);
+        controlPanel.add(dequeueButton);
         add(controlPanel, BorderLayout.NORTH);
 
         JPanel centerPanel = new JPanel(new GridLayout(1, 3));
 
         codeArea = new JTextArea(10, 20);
         codeArea.setText("MOVLW 10\nMOVWF 20\nMOVLW 5\nADDWF 20\nMOVWF 21\nSUBWF 20\nANDWF 21\nINCF 21\nGOTO 9\nSLEEP");
-        centerPanel.add(new JScrollPane(codeArea));
+        JScrollPane codeScroll = new JScrollPane(codeArea);
+        codeScroll.setBorder(BorderFactory.createTitledBorder("Program Memory (Editable)"));
+        centerPanel.add(codeScroll);
 
         String[] columnNames = {"Register", "Value"};
-        Object[][] data = new Object[30][2];
-        for (int i = 0; i < 30; i++) {
+        Object[][] data = new Object[60][2];
+        for (int i = 0; i < 60; i++) {
             data[i][0] = "RAM [" + i + "]";
             data[i][1] = 0;
         }
         registerTable = new JTable(data, columnNames);
-        centerPanel.add(new JScrollPane(registerTable));
+        JScrollPane regScroll = new JScrollPane(registerTable);
+        regScroll.setBorder(BorderFactory.createTitledBorder("Data Memory"));
+        centerPanel.add(regScroll);
 
         traceArea = new JTextArea();
         traceArea.setEditable(false);
         traceArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        centerPanel.add(new JScrollPane(traceArea));
+        JScrollPane traceScroll = new JScrollPane(traceArea);
+        traceScroll.setBorder(BorderFactory.createTitledBorder("Execution Trace"));
+        centerPanel.add(traceScroll);
 
         add(centerPanel, BorderLayout.CENTER);
+
+        JPanel bottomPanel = new JPanel(new BorderLayout());
 
         JPanel statusPanel = new JPanel();
         wField = new JTextField(5);
@@ -68,7 +82,15 @@ public class SimulatorUI extends JFrame {
         statusPanel.add(zeroFlagLabel);
         statusPanel.add(carryFlagLabel);
         statusPanel.add(haltedLabel);
-        add(statusPanel, BorderLayout.SOUTH);
+        bottomPanel.add(statusPanel, BorderLayout.NORTH);
+
+        queueArea = new JTextArea(3, 40);
+        queueArea.setEditable(false);
+        queueArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        queueArea.setBorder(BorderFactory.createTitledBorder("Queue Status"));
+        bottomPanel.add(queueArea, BorderLayout.CENTER);
+
+        add(bottomPanel, BorderLayout.SOUTH);
 
         loadButton.addActionListener(e -> {
             loadProgramFromEditor();
@@ -94,6 +116,17 @@ public class SimulatorUI extends JFrame {
             updateUIState();
         });
 
+        enqueueButton.addActionListener(e -> {
+            controller.getQueue().enqueue(nextEnqueueValue);
+            nextEnqueueValue += 10;
+            updateUIState();
+        });
+
+        dequeueButton.addActionListener(e -> {
+            controller.getQueue().dequeue();
+            updateUIState();
+        });
+
         loadProgramFromEditor();
         updateUIState();
     }
@@ -112,9 +145,11 @@ public class SimulatorUI extends JFrame {
         haltedLabel.setText("Halted: " + cpu.isHalted());
 
         int[] regs = cpu.getRegisters();
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 60; i++) {
             registerTable.setValueAt(regs[i], i, 1);
         }
+
+        queueArea.setText(controller.getQueue().getStatusString());
     }
 
     public static void main(String[] args) {
