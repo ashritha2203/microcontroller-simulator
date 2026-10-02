@@ -3,81 +3,110 @@ import java.io.*;
 public class UIProcess {
 
     private Process coreProcess;
-    private BufferedReader coreOutput;
-    private PrintWriter coreInput;
+    private BufferedReader coreReader;
+    private PrintWriter coreWriter;
 
-    public void startCore() throws Exception {
-        String javaHome = System.getProperty("java.home");
-        String java = javaHome + File.separator + "bin"
-                + File.separator + "java";
-
-        String classPath = System.getProperty("java.class.path");
-
-        ProcessBuilder builder = new ProcessBuilder(
-                java,
-                "-cp",
-                classPath,
-                "CoreMain"
-        );
-
-        builder.redirectError(ProcessBuilder.Redirect.INHERIT);
-
-        coreProcess = builder.start();
-
-        coreOutput = new BufferedReader(
-                new InputStreamReader(coreProcess.getInputStream())
-        );
-
-        coreInput = new PrintWriter(
-                new OutputStreamWriter(coreProcess.getOutputStream()),
-                true
-        );
+    public UIProcess() {
+        startCoreProcess();
     }
 
-    public String sendCommand(String command) throws IOException {
+    private void startCoreProcess() {
+
+        try {
+            String java = System.getProperty("java.home")
+                    + File.separator + "bin"
+                    + File.separator + "java";
+
+            String corePath = new File("bin", "Core").getAbsolutePath();
+            String mainPath = new File("bin").getAbsolutePath();
+
+            String classPath = corePath
+                    + File.pathSeparator
+                    + mainPath;
+
+            ProcessBuilder builder = new ProcessBuilder(
+                    java,
+                    "-cp",
+                    classPath,
+                    "CoreMain"
+            );
+
+            builder.redirectError(ProcessBuilder.Redirect.INHERIT);
+
+            coreProcess = builder.start();
+
+            coreReader = new BufferedReader(
+                    new InputStreamReader(
+                            coreProcess.getInputStream()
+                    )
+            );
+
+            coreWriter = new PrintWriter(
+                    new OutputStreamWriter(
+                            coreProcess.getOutputStream()
+                    ),
+                    true
+            );
+
+        } catch (IOException e) {
+            throw new RuntimeException(
+                    "Could not start Core Process: "
+                    + e.getMessage()
+            );
+        }
+    }
+
+    public synchronized String sendCommand(String command) {
+
         if (coreProcess == null || !coreProcess.isAlive()) {
-            throw new IOException("Core process is not running");
+            return "ERROR Core Process is not running";
         }
 
-        coreInput.println(command);
-        return coreOutput.readLine();
+        coreWriter.println(command);
+
+        try {
+            String response = coreReader.readLine();
+
+            if (response == null) {
+                return "ERROR Core Process closed";
+            }
+
+            return response;
+
+        } catch (IOException e) {
+            return "ERROR " + e.getMessage();
+        }
     }
 
     public void stopCore() {
+
         try {
-            if (coreInput != null) {
-                coreInput.println("QUIT");
+            if (coreWriter != null) {
+                coreWriter.println("QUIT");
             }
 
             if (coreProcess != null) {
                 coreProcess.destroy();
             }
+
         } catch (Exception e) {
-            e.printStackTrace();
+            System.err.println(
+                    "Error stopping Core Process"
+            );
         }
     }
 
     public static void main(String[] args) {
+
         UIProcess uiProcess = new UIProcess();
 
-        try {
-            uiProcess.startCore();
-
-            System.out.println("UI Process started");
-            System.out.println("Core Process connected");
-
-            Runtime.getRuntime().addShutdownHook(
+        Runtime.getRuntime().addShutdownHook(
                 new Thread(uiProcess::stopCore)
-            );
+        );
 
-            javax.swing.SwingUtilities.invokeLater(() -> {
-                SimulatorUI ui = new SimulatorUI(uiProcess);
-                ui.setVisible(true);
-            });
+        SimulatorUI ui =
+                new SimulatorUI(uiProcess);
 
-        } catch (Exception e) {
-            System.err.println("Failed to start Core Process");
-            e.printStackTrace();
-        }
+        ui.setVisible(true);
     }
 }
