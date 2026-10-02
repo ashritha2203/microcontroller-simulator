@@ -2,160 +2,232 @@ import javax.swing.*;
 import java.awt.*;
 
 public class SimulatorUI extends JFrame {
-    private SimulatorPIC controller;
+
+    private UIProcess controller;
+
     private JTextArea codeArea;
     private JTextArea traceArea;
-    private JTextArea queueArea;
     private JTextField wField;
     private JTextField pcField;
     private JLabel zeroFlagLabel;
     private JLabel carryFlagLabel;
     private JLabel haltedLabel;
-    private JTable registerTable;
-    private int nextEnqueueValue = 10;
+    private JTextArea queueArea;
 
-    public SimulatorUI(SimulatorPIC controller) {
+    public SimulatorUI(UIProcess controller) {
+
         this.controller = controller;
-        setTitle("PIC16F72 Educational Microcontroller Simulator");
-        setSize(1000, 650);
+
+        setTitle("PIC Simulator - UI Process");
+        setSize(1000, 700);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
 
-        JPanel controlPanel = new JPanel();
+        codeArea = new JTextArea();
+        codeArea.setText(
+            "MOVLW 10\n" +
+            "MOVWF 20\n" +
+            "HALT"
+        );
+
+        JScrollPane codeScroll = new JScrollPane(codeArea);
+        codeScroll.setBorder(
+            BorderFactory.createTitledBorder("Program")
+        );
+
+        traceArea = new JTextArea();
+        traceArea.setEditable(false);
+
+        JScrollPane traceScroll = new JScrollPane(traceArea);
+        traceScroll.setBorder(
+            BorderFactory.createTitledBorder("Trace")
+        );
+
+        JPanel statusPanel = new JPanel(new GridLayout(2, 5));
+
+        statusPanel.add(new JLabel("W"));
+        wField = new JTextField("0");
+        wField.setEditable(false);
+        statusPanel.add(wField);
+
+        statusPanel.add(new JLabel("PC"));
+        pcField = new JTextField("0");
+        pcField.setEditable(false);
+        statusPanel.add(pcField);
+
+        zeroFlagLabel = new JLabel("Zero: false");
+        carryFlagLabel = new JLabel("Carry: false");
+        haltedLabel = new JLabel("Halted: false");
+
+        statusPanel.add(zeroFlagLabel);
+        statusPanel.add(carryFlagLabel);
+        statusPanel.add(haltedLabel);
+
+        queueArea = new JTextArea();
+        queueArea.setEditable(false);
+        queueArea.setText("Queue: Empty");
+
+        JScrollPane queueScroll = new JScrollPane(queueArea);
+        queueScroll.setBorder(
+            BorderFactory.createTitledBorder("FIFO Queue")
+        );
+
         JButton loadButton = new JButton("Load");
         JButton stepButton = new JButton("Step");
         JButton runButton = new JButton("Run");
         JButton resetButton = new JButton("Reset");
         JButton enqueueButton = new JButton("Enqueue 10");
         JButton dequeueButton = new JButton("Dequeue");
-        controlPanel.add(loadButton);
-        controlPanel.add(stepButton);
-        controlPanel.add(runButton);
-        controlPanel.add(resetButton);
-        controlPanel.add(enqueueButton);
-        controlPanel.add(dequeueButton);
-        add(controlPanel, BorderLayout.NORTH);
 
-        JPanel centerPanel = new JPanel(new GridLayout(1, 3));
+        JPanel buttonPanel = new JPanel();
 
-        codeArea = new JTextArea(10, 20);
-        codeArea.setText("MOVLW 10\nMOVWF 20\nMOVLW 5\nADDWF 20\nMOVWF 21\nSUBWF 20\nANDWF 21\nINCF 21\nGOTO 9\nSLEEP");
-        JScrollPane codeScroll = new JScrollPane(codeArea);
-        codeScroll.setBorder(BorderFactory.createTitledBorder("Program Memory (Editable)"));
-        centerPanel.add(codeScroll);
+        buttonPanel.add(loadButton);
+        buttonPanel.add(stepButton);
+        buttonPanel.add(runButton);
+        buttonPanel.add(resetButton);
+        buttonPanel.add(enqueueButton);
+        buttonPanel.add(dequeueButton);
 
-        String[] columnNames = {"Register", "Value"};
-        Object[][] data = new Object[60][2];
-        for (int i = 0; i < 60; i++) {
-            data[i][0] = "RAM [" + i + "]";
-            data[i][1] = 0;
-        }
-        registerTable = new JTable(data, columnNames);
-        JScrollPane regScroll = new JScrollPane(registerTable);
-        regScroll.setBorder(BorderFactory.createTitledBorder("Data Memory"));
-        centerPanel.add(regScroll);
-
-        traceArea = new JTextArea();
-        traceArea.setEditable(false);
-        traceArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        JScrollPane traceScroll = new JScrollPane(traceArea);
-        traceScroll.setBorder(BorderFactory.createTitledBorder("Execution Trace"));
-        centerPanel.add(traceScroll);
-
-        add(centerPanel, BorderLayout.CENTER);
-
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-
-        JPanel statusPanel = new JPanel();
-        wField = new JTextField(5);
-        wField.setEditable(false);
-        pcField = new JTextField(5);
-        pcField.setEditable(false);
-        zeroFlagLabel = new JLabel("Zero: false");
-        carryFlagLabel = new JLabel("Carry: false");
-        haltedLabel = new JLabel("Halted: false");
-
-        statusPanel.add(new JLabel("W:"));
-        statusPanel.add(wField);
-        statusPanel.add(new JLabel("PC:"));
-        statusPanel.add(pcField);
-        statusPanel.add(zeroFlagLabel);
-        statusPanel.add(carryFlagLabel);
-        statusPanel.add(haltedLabel);
-        bottomPanel.add(statusPanel, BorderLayout.NORTH);
-
-        queueArea = new JTextArea(3, 40);
-        queueArea.setEditable(false);
-        queueArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-        queueArea.setBorder(BorderFactory.createTitledBorder("Queue Status"));
-        bottomPanel.add(queueArea, BorderLayout.CENTER);
-
-        add(bottomPanel, BorderLayout.SOUTH);
-
-        loadButton.addActionListener(e -> {
-            loadProgramFromEditor();
-            traceArea.setText("Program loaded.\n");
-            updateUIState();
-        });
+        loadButton.addActionListener(e -> loadProgram());
 
         stepButton.addActionListener(e -> {
-            String trace = controller.step();
-            traceArea.setText(trace);
-            updateUIState();
+
+            String result = controller.sendCommand("STEP");
+
+            traceArea.append(result + "\n");
+
+            updateState(result);
         });
 
         runButton.addActionListener(e -> {
-            controller.run();
-            traceArea.setText("Program ran to completion.\nHalted = " + controller.getCpu().isHalted());
-            updateUIState();
+
+            String result = controller.sendCommand("RUN");
+
+            traceArea.append(result + "\n");
+
+            updateState(result);
         });
 
         resetButton.addActionListener(e -> {
-            controller.reset();
-            traceArea.setText("Simulator reset.\n");
-            updateUIState();
+
+            String result = controller.sendCommand("RESET");
+
+            traceArea.append(result + "\n");
+
+            updateState(
+                controller.sendCommand("GET_STATE")
+            );
+
+            queueArea.setText("Queue: Empty");
         });
 
         enqueueButton.addActionListener(e -> {
-            controller.getQueue().enqueue(nextEnqueueValue);
-            nextEnqueueValue += 10;
-            updateUIState();
+
+            String result = controller.sendCommand("ENQ 10");
+
+            traceArea.append(result + "\n");
+
+            queueArea.setText(
+                "Last operation: Enqueue 10\n" + result
+            );
         });
 
         dequeueButton.addActionListener(e -> {
-            controller.getQueue().dequeue();
-            updateUIState();
+
+            String result = controller.sendCommand("DEQ");
+
+            traceArea.append(result + "\n");
+
+            queueArea.setText(
+                "Last operation: Dequeue\n" + result
+            );
         });
 
-        loadProgramFromEditor();
-        updateUIState();
+        JPanel centerPanel = new JPanel(new GridLayout(1, 2));
+
+        centerPanel.add(codeScroll);
+        centerPanel.add(traceScroll);
+
+        add(centerPanel, BorderLayout.CENTER);
+        add(statusPanel, BorderLayout.NORTH);
+        add(queueScroll, BorderLayout.EAST);
+        add(buttonPanel, BorderLayout.SOUTH);
+
+        updateState(
+            controller.sendCommand("GET_STATE")
+        );
     }
 
-    private void loadProgramFromEditor() {
-        String[] lines = codeArea.getText().split("\n");
-        controller.loadProgram(lines);
-    }
+    private void loadProgram() {
 
-    private void updateUIState() {
-        CPU cpu = controller.getCpu();
-        wField.setText(String.valueOf(cpu.getW()));
-        pcField.setText(String.valueOf(cpu.getPC()));
-        zeroFlagLabel.setText("Zero: " + cpu.getZeroFlag());
-        carryFlagLabel.setText("Carry: " + cpu.getCarryFlag());
-        haltedLabel.setText("Halted: " + cpu.isHalted());
+        String[] lines = codeArea.getText().split("\\n");
 
-        int[] regs = cpu.getRegisters();
-        for (int i = 0; i < 60; i++) {
-            registerTable.setValueAt(regs[i], i, 1);
+        for (int i = 0; i < lines.length; i++) {
+
+            if (lines[i].trim().isEmpty()) {
+                continue;
+            }
+
+            String result = controller.sendCommand(
+                "LOAD " + i + " " + lines[i]
+            );
+
+            traceArea.append(result + "\n");
         }
 
-        queueArea.setText(controller.getQueue().getStatusString());
+        updateState(
+            controller.sendCommand("GET_STATE")
+        );
     }
 
-    public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> {
-            SimulatorPIC controller = new SimulatorPIC();
-            new SimulatorUI(controller).setVisible(true);
-        });
+    private void updateState(String state) {
+
+        if (state == null) {
+            return;
+        }
+
+        try {
+
+            String[] parts = state.split(" ");
+
+            for (String part : parts) {
+
+                if (part.startsWith("pc=")) {
+                    pcField.setText(
+                        part.substring(3)
+                    );
+                }
+
+                else if (part.startsWith("w=")) {
+                    wField.setText(
+                        part.substring(2)
+                    );
+                }
+
+                else if (part.startsWith("z=")) {
+                    zeroFlagLabel.setText(
+                        "Zero: " + part.substring(2)
+                    );
+                }
+
+                else if (part.startsWith("c=")) {
+                    carryFlagLabel.setText(
+                        "Carry: " + part.substring(2)
+                    );
+                }
+
+                else if (part.startsWith("halted=")) {
+                    haltedLabel.setText(
+                        "Halted: " + part.substring(7)
+                    );
+                }
+            }
+
+        } catch (Exception e) {
+
+            traceArea.append(
+                "State update error\n"
+            );
+        }
     }
 }
