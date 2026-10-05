@@ -27,7 +27,7 @@ public class SimulatorUI extends JFrame {
         codeArea.setText(
             "MOVLW 10\n" +
             "MOVWF 20\n" +
-            "HALT"
+            "SLEEP"
         );
 
         JScrollPane codeScroll = new JScrollPane(codeArea);
