@@ -1,5 +1,4 @@
 package logging;
-
 import shared.IPCMessage;
 
 import java.io.FileInputStream;
