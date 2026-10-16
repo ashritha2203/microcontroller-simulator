@@ -1,130 +1,62 @@
-package logging;
-import shared.IPCMessage;
-
-import java.io.FileInputStream;
-import java.io.ObjectInputStream;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
+import java.time.LocalDateTime;
 
-public class LoggingProcess {
+public class LoggerProcess {
 
-    // POSIX FIFO path
-    private static final String FIFO_PATH = "/tmp/logging_fifo";
-
-    // FCFS queue for log messages
-    private final BlockingQueue<String> logFCFSQueue =
-            new ArrayBlockingQueue<>(200);
+    private static final String LOG_FILE = "simulator.log";
 
     public static void main(String[] args) {
-        LoggingProcess process = new LoggingProcess();
-        process.start();
+
+        LoggerProcess logger = new LoggerProcess();
+
+        System.out.println("Logger Process Started");
+
+        LogMessage executionLog =
+                new LogMessage("EXECUTION", "ADD instruction executed");
+
+        logger.processLog(executionLog);
+
+        LogMessage errorLog =
+                new LogMessage("ERROR", "Invalid instruction");
+
+        logger.processLog(errorLog);
+
+        System.out.println("Logger Process Finished");
     }
 
-    public void start() {
+    public void processLog(LogMessage log) {
 
-        System.out.println(
-                "[LOGGING PROCESS] Starting Async Log Daemon..."
-        );
+        String time = LocalDateTime.now().toString();
 
-        // Start the file-writer thread
-        Thread writerThread =
-                new Thread(this::fileWriterWorker);
+        String logEntry =
+                time + " " + log.toString();
 
-        writerThread.start();
+        System.out.println(logEntry);
 
-        // Listen to the POSIX FIFO
-        fifoListener();
+        writeToFile(logEntry);
     }
 
-    private void fifoListener() {
+    private void writeToFile(String logEntry) {
 
-        System.out.println(
-                "[LOGGING PROCESS] Waiting for log streams on FIFO: "
-                        + FIFO_PATH
-        );
+        try {
+            FileWriter fileWriter =
+                    new FileWriter(LOG_FILE, true);
 
-        try (
-                FileInputStream fis =
-                        new FileInputStream(FIFO_PATH);
+            PrintWriter writer =
+                    new PrintWriter(fileWriter);
 
-                ObjectInputStream in =
-                        new ObjectInputStream(fis)
-        ) {
+            writer.println(logEntry);
 
-            while (true) {
+            writer.close();
 
-                // Receive IPC message
-                IPCMessage msg =
-                        (IPCMessage) in.readObject();
+        } catch (IOException e) {
 
-                // Check message
-                if (msg != null && msg.getLogText() != null) {
-
-                    // Add message to FCFS queue
-                    logFCFSQueue.put(msg.getLogText());
-                }
-            }
-
-        } catch (Exception e) {
-
-            System.err.println(
-                    "[LOGGER ERROR] FIFO connection lost: "
-                            + e.getMessage()
-            );
-        }
-    }
-
-    private void fileWriterWorker() {
-
-        // false = DEBUG messages are not displayed
-        boolean showDebugInConsole = false;
-
-        try (
-                PrintWriter writer =
-                        new PrintWriter(
-                                new FileWriter(
-                                        "simulation.log",
-                                        true
-                                )
-                        )
-        ) {
-
-            while (true) {
-
-                // Get the first message from FCFS queue
-                String logText =
-                        logFCFSQueue.take();
-
-                // Add date and time
-                String formattedLog =
-                        String.format(
-                                "[%tF %<tT] %s",
-                                System.currentTimeMillis(),
-                                logText
-                        );
-
-                // Write log to file
-                writer.println(formattedLog);
-                writer.flush();
-
-                // Display logs in terminal
-                if (showDebugInConsole
-                        || !logText.contains("[DEBUG]")) {
-
-                    System.out.println(
-                            "[LOG] " + formattedLog
-                    );
-                }
-            }
-
-        } catch (Exception e) {
-
-            System.err.println(
-                    "[LOGGER WRITE ERROR] "
-                            + e.getMessage()
+            System.out.println(
+                    "ERROR: Unable to write log file"
             );
         }
     }
 }
+        
