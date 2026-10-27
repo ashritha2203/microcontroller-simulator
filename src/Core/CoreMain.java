@@ -2,6 +2,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.Set;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
 import shared.IPCMessage;
 
 public class CoreMain {
@@ -11,22 +12,30 @@ public class CoreMain {
         CoreError(String msg) { super(msg); }
     }
 
-    // ---------- Core -> Logger (named FIFO) ----------
-    private static final String FIFO_PATH = "/tmp/logging_fifo";
+    // ---------- FIFO names (agreed with the team) ----------
+    private static final String CORE_TO_LOGGER = "/tmp/logging_fifo";    // Core writes here
+    private static final String LOGGER_TO_CORE = "/tmp/logger_to_core";  // Core reads acks here
+
     private static final BlockingQueue<String> logQueue = new LinkedBlockingQueue<>(1000);
+    private static final AtomicLong cmdsLogged = new AtomicLong();    // command logs we sent
+    private static final AtomicLong acksReceived = new AtomicLong();  // acks the Logger sent back
     private static final Set<String> VALID =
             Set.of("MOVLW", "MOVWF", "ADDWF", "SUBWF", "ANDWF", "INCF", "GOTO", "SLEEP");
 
-    private static void startLogger() {
-        Path fifo = Paths.get(FIFO_PATH);
-        if (!Files.exists(fifo) || Files.isRegularFile(fifo)) {
-            System.err.println("[CORE] No FIFO at " + FIFO_PATH + " - logging disabled");
+    private static boolean fifoExists(String path) {
+        Path p = Paths.get(path);
+        return Files.exists(p) && !Files.isRegularFile(p);
+    }
+
+    // ---------- Thread 1: Core -> Logger ----------
+    private static void startLogSender() {
+        if (!fifoExists(CORE_TO_LOGGER)) {
+            System.err.println("[CORE] No FIFO at " + CORE_TO_LOGGER + " - logging disabled");
             return;
         }
         Thread t = new Thread(() -> {
-            // This line waits until the Logger opens its end of the FIFO.
-            // It runs in its own thread, so the CPU is never blocked.
-            try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(FIFO_PATH))) {
+            // Waits here until the Logger opens its end. Only this thread waits, never the CPU.
+            try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(CORE_TO_LOGGER))) {
                 out.flush();
                 while (true) {
                     String text = logQueue.take();
@@ -42,11 +51,38 @@ public class CoreMain {
         t.start();
     }
 
-    private static void log(String level, String message) {
-        logQueue.offer("[CORE] [" + level + "] " + message);  // never blocks Core
+    // ---------- Thread 2: Logger -> Core (acks) ----------
+    private static void startAckReader() {
+        if (!fifoExists(LOGGER_TO_CORE)) {
+            System.err.println("[CORE] No FIFO at " + LOGGER_TO_CORE + " - acks disabled");
+            return;
+        }
+        Thread t = new Thread(() -> {
+            while (true) {
+                // Waits here until the Logger opens its end. The CPU is not affected.
+                try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(LOGGER_TO_CORE))) {
+                    while (true) {
+                        in.readObject();                  // one ack from the Logger
+                        acksReceived.incrementAndGet();   // just count it, keep reading
+                    }
+                } catch (EOFException e) {
+                    // Logger closed its end; wait for it to come back
+                } catch (Exception e) {
+                    System.err.println("[CORE] Ack link problem: " + e.getMessage());
+                }
+                try { Thread.sleep(1000); } catch (InterruptedException ie) { return; }
+            }
+        }, "ack-reader");
+        t.setDaemon(true);
+        t.start();
     }
 
-    // ---------- main loop: UI -> Core -> UI ----------
+    private static void log(String level, String message) {
+        if (level.equals("CMD")) cmdsLogged.incrementAndGet();
+        logQueue.offer("[CORE] [" + level + "] " + message);   // never blocks the CPU
+    }
+
+    // ---------- Main thread: UI -> Core -> UI ----------
     public static void main(String[] args) throws Exception {
         PrintStream reply = new PrintStream(new FileOutputStream(FileDescriptor.out), true);
         PrintStream realErr = System.err;
@@ -59,7 +95,8 @@ public class CoreMain {
         CPU cpu = new CPU();
         Processor proc = new Processor(cpu);
 
-        startLogger();
+        startLogSender();
+        startAckReader();
         log("INFO", "Core started");
         captured.reset();
 
@@ -82,7 +119,7 @@ public class CoreMain {
             String printed = captured.toString().trim();
             captured.reset();
             if (!printed.isEmpty()) {
-                realErr.println(printed);                      // still visible in the terminal
+                realErr.println(printed);
                 String problem = findProblem(printed);
                 if (problem != null && out != null && !out.startsWith("ERROR")) {
                     out = "ERROR " + problem;
@@ -163,6 +200,8 @@ public class CoreMain {
                 return "OK ENQ";
             case "DEQ":
                 return "VALUE " + cpu.dequeue();
+            case "STATS":                        // how many command logs sent / acks received
+                return "STATS cmdsLogged=" + cmdsLogged.get() + " acks=" + acksReceived.get();
             case "QUIT":
                 return null;
             default:
