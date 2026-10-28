@@ -1,4 +1,5 @@
 import java.io.*;
+import javax.swing.*;
 
 public class UIProcess {
 
@@ -68,7 +69,11 @@ public class UIProcess {
             String response = coreReader.readLine();
 
             if (response == null) {
+                showError("Core Process closed");
                 return "ERROR Core Process closed";
+                }
+            if (response.startsWith("ERROR")) {
+                showError(response);
             }
 
             return response;
@@ -95,6 +100,11 @@ public class UIProcess {
             );
         }
     }
+
+    private void showError(String msg) {
+        SwingUtilities.invokeLater(() ->
+        JOptionPane.showMessageDialog(null, msg, "Simulator Error", JOptionPane.ERROR_MESSAGE));
+}
 
     public static void main(String[] args) {
 

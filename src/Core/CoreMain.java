@@ -1,64 +1,157 @@
 import java.io.*;
+import java.nio.file.*;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import shared.IPCMessage;
 
 public class CoreMain {
 
-    // ---- Core -> Logger link (Logger runs as a child process of Core) ----
-    private static PrintWriter logOut = null;
+    // A problem we want to show the user (not a crash)
+    static class CoreError extends RuntimeException {
+        CoreError(String msg) { super(msg); }
+    }
 
-    private static void startLogger(String loggerClass) {
-        try {
-            Process logger = new ProcessBuilder("java", "-cp", "out", loggerClass)
-                    .redirectError(ProcessBuilder.Redirect.INHERIT)
-                    .redirectOutput(ProcessBuilder.Redirect.DISCARD) // keep Logger out of Core's stdout
-                    .start();
-            logOut = new PrintWriter(logger.getOutputStream(), true);
-        } catch (IOException e) {
-            System.err.println("Logger could not start: " + e.getMessage());
-            logOut = null;   // Core keeps working without logging
+    // ---------- FIFO names (agreed with the team) ----------
+    private static final String CORE_TO_LOGGER = "/tmp/logging_fifo";    // Core writes here
+    private static final String LOGGER_TO_CORE = "/tmp/logger_to_core";  // Core reads acks here
+
+    private static final BlockingQueue<String> logQueue = new LinkedBlockingQueue<>(1000);
+    private static final AtomicLong cmdsLogged = new AtomicLong();    // command logs we sent
+    private static final AtomicLong acksReceived = new AtomicLong();  // acks the Logger sent back
+    private static final Set<String> VALID =
+            Set.of("MOVLW", "MOVWF", "ADDWF", "SUBWF", "ANDWF", "INCF", "GOTO", "SLEEP");
+
+    private static boolean fifoExists(String path) {
+        Path p = Paths.get(path);
+        return Files.exists(p) && !Files.isRegularFile(p);
+    }
+
+    // ---------- Thread 1: Core -> Logger ----------
+    private static void startLogSender() {
+        if (!fifoExists(CORE_TO_LOGGER)) {
+            System.err.println("[CORE] No FIFO at " + CORE_TO_LOGGER + " - logging disabled");
+            return;
         }
+        Thread t = new Thread(() -> {
+            // Waits here until the Logger opens its end. Only this thread waits, never the CPU.
+            try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(CORE_TO_LOGGER))) {
+                out.flush();
+                while (true) {
+                    String text = logQueue.take();
+                    out.writeObject(new IPCMessage(text));
+                    out.reset();
+                    out.flush();
+                }
+            } catch (Exception e) {
+                System.err.println("[CORE] Logger link closed: " + e.getMessage());
+            }
+        }, "log-sender");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    // ---------- Thread 2: Logger -> Core (acks) ----------
+    private static void startAckReader() {
+        if (!fifoExists(LOGGER_TO_CORE)) {
+            System.err.println("[CORE] No FIFO at " + LOGGER_TO_CORE + " - acks disabled");
+            return;
+        }
+        Thread t = new Thread(() -> {
+            while (true) {
+                // Waits here until the Logger opens its end. The CPU is not affected.
+                try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(LOGGER_TO_CORE))) {
+                    while (true) {
+                        in.readObject();                  // one ack from the Logger
+                        acksReceived.incrementAndGet();   // just count it, keep reading
+                    }
+                } catch (EOFException e) {
+                    // Logger closed its end; wait for it to come back
+                } catch (Exception e) {
+                    System.err.println("[CORE] Ack link problem: " + e.getMessage());
+                }
+                try { Thread.sleep(1000); } catch (InterruptedException ie) { return; }
+            }
+        }, "ack-reader");
+        t.setDaemon(true);
+        t.start();
     }
 
     private static void log(String level, String message) {
-        if (logOut == null) return;
-        logOut.println(System.currentTimeMillis() + " " + level + " " + message);
-        if (logOut.checkError()) logOut = null;   // Logger died, stop trying
+        if (level.equals("CMD")) cmdsLogged.incrementAndGet();
+        logQueue.offer("[CORE] [" + level + "] " + message);   // never blocks the CPU
     }
 
+    // ---------- Main thread: UI -> Core -> UI ----------
     public static void main(String[] args) throws Exception {
-        // Real stdout = replies to the UI only
         PrintStream reply = new PrintStream(new FileOutputStream(FileDescriptor.out), true);
-        // println calls inside Stack/Queue/Processor now go to stderr
-        System.setOut(System.err);
+        PrintStream realErr = System.err;
+
+        // Capture prints from Stack/Queue/Processor instead of letting them reach the UI
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(captured, true));
 
         BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
         CPU cpu = new CPU();
         Processor proc = new Processor(cpu);
 
-        startLogger("LoggerMain");          // must match your Logging teammate's class name
+        startLogSender();
+        startAckReader();
         log("INFO", "Core started");
+        captured.reset();
 
         String line;
-        while ((line = in.readLine()) != null) {          // UI -> Core
+        while ((line = in.readLine()) != null) {
             line = line.trim();
             if (line.isEmpty()) continue;
-
-            log("CMD", line);                             // Core -> Logger
+            log("CMD", line);
 
             String out;
             try {
                 out = handle(line, cpu, proc);
+            } catch (CoreError e) {
+                out = "ERROR " + e.getMessage();
             } catch (Exception e) {
-                out = "ERROR " + e;
-                log("ERROR", e.toString());               // Core -> Logger
+                out = "ERROR " + e.getClass().getSimpleName() + ": " + e.getMessage();
             }
-            if (out == null) break;                       // QUIT
 
-            log("REPLY", out);                            // Core -> Logger
-            reply.println(out);                           // Core -> UI
+            // Did Stack/Queue print a warning (full, empty, overflow...)? Turn it into an ERROR reply.
+            String printed = captured.toString().trim();
+            captured.reset();
+            if (!printed.isEmpty()) {
+                realErr.println(printed);
+                String problem = findProblem(printed);
+                if (problem != null && out != null && !out.startsWith("ERROR")) {
+                    out = "ERROR " + problem;
+                }
+            }
+
+            if (out == null) break;                            // QUIT
+            log(out.startsWith("ERROR") ? "ERROR" : "REPLY", out);
+            reply.println(out);                                // Core -> UI
         }
 
         log("INFO", "Core stopped");
-        if (logOut != null) logOut.close();
+        Thread.sleep(300);   // give the log thread time to send the last lines
+    }
+
+    private static String findProblem(String printed) {
+        for (String l : printed.split("\\R")) {
+            if (l.contains("FULL") || l.contains("EMPTY")
+                    || l.contains("Overflow") || l.contains("Underflow")) {
+                return l.trim();
+            }
+        }
+        return null;
+    }
+
+    private static int num(String[] p) {
+        if (p.length < 2) throw new CoreError("missing number after " + p[0]);
+        try {
+            return Integer.parseInt(p[1]);
+        } catch (NumberFormatException e) {
+            throw new CoreError("not a number: " + p[1]);
+        }
     }
 
     private static String handle(String line, CPU cpu, Processor proc) {
@@ -67,14 +160,15 @@ public class CoreMain {
 
         switch (cmd) {
             case "LOAD": {                       // LOAD <addr> <instruction text>
-                int addr = Integer.parseInt(p[1]);
-                if (addr < 0 || addr > 255) return "ERROR address out of range";
+                if (p.length < 3) return "ERROR usage: LOAD <address> <instruction>";
+                int addr = num(p);
+                if (addr < 0 || addr > 255) return "ERROR address out of range (0-255)";
                 cpu.getProgramMemory()[addr] = p[2];
                 return "OK LOAD " + addr;
             }
             case "STEP": {
                 if (cpu.isHalted()) return "HALTED " + state(cpu);
-                if (!canFetch(cpu)) return "ERROR no instruction at pc=" + cpu.getPC();
+                if (!canFetch(cpu)) return "ERROR no instruction at address " + cpu.getPC();
                 executeAndLog(cpu, proc);
                 return state(cpu);
             }
@@ -91,20 +185,23 @@ public class CoreMain {
                 return "OK RESET";
             case "GET_STATE":
                 return state(cpu);
-            case "READMEM": {                    // READMEM <addr>
-                int a = Integer.parseInt(p[1]);
+            case "READMEM": {
+                int a = num(p);
+                if (a < 0 || a > 255) return "ERROR address out of range (0-255)";
                 return "MEM " + a + "=" + cpu.readMemory(a);
             }
             case "PUSH":
-                cpu.push(Integer.parseInt(p[1]));
+                cpu.push(num(p));
                 return "OK SP=" + cpu.getSP();
             case "POP":
                 return "VALUE " + cpu.pop();
             case "ENQ":
-                cpu.enqueue(Integer.parseInt(p[1]));
+                cpu.enqueue(num(p));
                 return "OK ENQ";
             case "DEQ":
                 return "VALUE " + cpu.dequeue();
+            case "STATS":                        // how many command logs sent / acks received
+                return "STATS cmdsLogged=" + cmdsLogged.get() + " acks=" + acksReceived.get();
             case "QUIT":
                 return null;
             default:
@@ -112,10 +209,13 @@ public class CoreMain {
         }
     }
 
-    // Runs one instruction and sends an EXEC event to the Logger
     private static void executeAndLog(CPU cpu, Processor proc) {
         int pcBefore = cpu.getPC();
-        String instr = cpu.getProgramMemory()[pcBefore];
+        String instr = cpu.getProgramMemory()[pcBefore].trim();
+        String opcode = instr.split("\\s+")[0].toUpperCase();
+        if (!VALID.contains(opcode)) {
+            throw new CoreError("Unknown instruction '" + opcode + "' at address " + pcBefore);
+        }
         proc.step();
         log("EXEC", "pc=" + pcBefore + " " + instr);
     }
