@@ -13,6 +13,7 @@ public class SimulatorUI extends JFrame {
     private JTextArea codeArea;
     private JTextArea traceArea;
     private JTextArea queueArea;
+    private JTextArea errorsArea;
     private JTextField wField;
     private JTextField pcField;
     private JTextField spField;
@@ -115,6 +116,13 @@ public class SimulatorUI extends JFrame {
         p.add(codeScroll);
         p.add(memScroll);
         p.add(traceScroll);
+        errorsArea = new JTextArea();
+        errorsArea.setEditable(false);
+        errorsArea.setFont(MONO);
+        JScrollPane errorsScroll = new JScrollPane(errorsArea);
+        errorsScroll.setBorder(
+                BorderFactory.createTitledBorder("Errors"));
+        p.add(errorsScroll);
         return p;
     }
 
