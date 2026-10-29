@@ -6,6 +6,8 @@ public class UIProcess {
     private Process coreProcess;
     private BufferedReader coreReader;
     private PrintWriter coreWriter;
+    private Thread fifoReaderThread;
+    private Thread fifoWriterThread;
 
     public UIProcess() {
         startCoreProcess();
