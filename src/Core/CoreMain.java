@@ -16,7 +16,7 @@ public class CoreMain {
     private static final String CORE_TO_LOGGER = "/tmp/logging_fifo";    // Core writes here
     private static final String LOGGER_TO_CORE = "/tmp/logger_to_core";  // Core reads acks here
 
-    private static final BlockingQueue<String> logQueue = new LinkedBlockingQueue<>(1000);
+    private static final BlockingQueue<IPCMessage> logQueue = new LinkedBlockingQueue<>(1000);
     private static final AtomicLong cmdsLogged = new AtomicLong();    // command logs we sent
     private static final AtomicLong acksReceived = new AtomicLong();  // acks the Logger sent back
     private static final Set<String> VALID =
@@ -34,23 +34,29 @@ public class CoreMain {
             return;
         }
         Thread t = new Thread(() -> {
-            // Waits here until the Logger opens its end. Only this thread waits, never the CPU.
-            try (ObjectOutputStream out = new ObjectOutputStream(new FileOutputStream(CORE_TO_LOGGER))) {
-                out.flush();
-                while (true) {
-                    String text = logQueue.take();
-                    out.writeObject(new IPCMessage(text));
-                    out.reset();
-                    out.flush();
+            while (true) {
+                if (!fifoExists(CORE_TO_LOGGER)) {          // never open a missing FIFO (it would become a normal file)
+                    try { Thread.sleep(1000); } catch (InterruptedException ie) { return; }
+                    continue;
                 }
-            } catch (Exception e) {
-                System.err.println("[CORE] Logger link closed: " + e.getMessage());
+                // Waits here until the Logger opens its end. Only this thread waits, never the CPU.
+                try (PrintWriter out = new PrintWriter(new FileOutputStream(CORE_TO_LOGGER), true)) {
+                    while (true) {
+                        IPCMessage m = logQueue.take();
+                        out.println(m.toString());
+                        if (out.checkError()) break;        // Logger closed its end; reconnect
+                    }
+                } catch (InterruptedException ie) {
+                    return;
+                } catch (Exception e) {
+                    System.err.println("[CORE] Logger link problem: " + e.getMessage());
+                }
+                try { Thread.sleep(1000); } catch (InterruptedException ie) { return; }
             }
         }, "log-sender");
         t.setDaemon(true);
         t.start();
     }
-
     // ---------- Thread 2: Logger -> Core (acks) ----------
     private static void startAckReader() {
         if (!fifoExists(LOGGER_TO_CORE)) {
@@ -60,17 +66,19 @@ public class CoreMain {
         Thread t = new Thread(() -> {
             while (true) {
                 // Waits here until the Logger opens its end. The CPU is not affected.
-                try (ObjectInputStream in = new ObjectInputStream(new FileInputStream(LOGGER_TO_CORE))) {
-                    while (true) {
-                        in.readObject();                  // one ack from the Logger
-                        acksReceived.incrementAndGet();   // just count it, keep reading
+                try (BufferedReader in = new BufferedReader(new FileReader(LOGGER_TO_CORE))) {
+                    String line;
+                    while ((line = in.readLine()) != null) {
+                        IPCMessage m = IPCMessage.fromString(line);
+                        if (m != null && "ACK".equals(m.getType())) {
+                            acksReceived.incrementAndGet();   // just count it, keep reading
+                        }
                     }
-                } catch (EOFException e) {
-                    // Logger closed its end; wait for it to come back
+                    // null = Logger closed its end; wait for it to come back
                 } catch (Exception e) {
                     System.err.println("[CORE] Ack link problem: " + e.getMessage());
                 }
-                try { Thread.sleep(1000); } catch (InterruptedException ie) { return; }
+                try { Thread.sleep(500); } catch (InterruptedException ie) { return; }
             }
         }, "ack-reader");
         t.setDaemon(true);
@@ -79,7 +87,9 @@ public class CoreMain {
 
     private static void log(String level, String message) {
         if (level.equals("CMD")) cmdsLogged.incrementAndGet();
-        logQueue.offer("[CORE] [" + level + "] " + message);   // never blocks the CPU
+        String type = level.equals("ERROR") ? "ERROR" : "LOG";
+        String text = ("[" + level + "] " + message).replace('\n', ' ').replace('\r', ' ');  // one line only
+        logQueue.offer(new IPCMessage("CORE", type, text));   // never blocks the CPU
     }
 
     // ---------- Main thread: UI -> Core -> UI ----------
