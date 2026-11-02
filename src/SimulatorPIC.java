@@ -1,3 +1,7 @@
+import core.CPU;
+import core.Processor;
+import core.Queue;
+
 public class SimulatorPIC {
     private CPU cpu;
     private Processor processor;
