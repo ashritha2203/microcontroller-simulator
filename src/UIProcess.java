@@ -7,6 +7,9 @@ import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -134,31 +137,40 @@ public class UIProcess {
         }
 
         outgoingMessages.offer(
-                new IPCMessage("UI", "LOG", message));
+                new IPCMessage("UI", IPCMessage.LOG, message));
     }
 
     private void readLoggerMessages() {
         while (running.get()) {
-            try (BufferedReader reader = new BufferedReader(
-                    new FileReader(LOGGER_TO_UI))) {
+            try {
+                Path path = Paths.get(LOGGER_TO_UI);
 
-                String line;
+                if (!Files.exists(path) || Files.isRegularFile(path)) {
+                    sleepBriefly();
+                    continue;
+                }
 
-                while (running.get() && (line = reader.readLine()) != null) {
-                    IPCMessage message = IPCMessage.fromString(line);
+                try (BufferedReader reader = new BufferedReader(
+                        new FileReader(LOGGER_TO_UI))) {
 
-                    if (message == null) {
-                        continue;
-                    }
+                    String line;
 
-                    if ("ERROR".equals(message.getType())) {
-                        String errorText = message.getText();
+                    while (running.get() && (line = reader.readLine()) != null) {
+                        IPCMessage message = IPCMessage.fromString(line);
 
-                        SwingUtilities.invokeLater(() -> {
-                            if (ui != null) {
-                                ui.appendError(errorText);
-                            }
-                        });
+                        if (message == null) {
+                            continue;
+                        }
+
+                        if (IPCMessage.ERROR.equals(message.getType())) {
+                            String errorText = message.getText();
+
+                            SwingUtilities.invokeLater(() -> {
+                                if (ui != null) {
+                                    ui.appendError(errorText);
+                                }
+                            });
+                        }
                     }
                 }
 
@@ -172,11 +184,24 @@ public class UIProcess {
 
     private void writeLoggerMessages() {
         while (running.get()) {
+            IPCMessage message = null;
+
             try {
-                IPCMessage message =
-                        outgoingMessages.poll(500, TimeUnit.MILLISECONDS);
+                message = outgoingMessages.peek();
 
                 if (message == null) {
+                    message = outgoingMessages.poll(500, TimeUnit.MILLISECONDS);
+                }
+
+                if (message == null) {
+                    continue;
+                }
+
+                Path path = Paths.get(UI_TO_LOGGER);
+
+                // Wait for the FIFO setup script; don't create a normal file.
+                if (!Files.exists(path) || Files.isRegularFile(path)) {
+                    sleepBriefly();
                     continue;
                 }
 
@@ -189,7 +214,11 @@ public class UIProcess {
                     if (writer.checkError()) {
                         System.err.println(
                                 "Could not write message to Logger FIFO.");
+                        sleepBriefly();
+                        continue;
                     }
+
+                    outgoingMessages.remove(message);
                 }
 
             } catch (InterruptedException e) {
@@ -234,7 +263,6 @@ public class UIProcess {
             fifoWriterThread.interrupt();
         }
 
-        // Request graceful shutdown before terminating Core.
         if (coreWriter != null) {
             coreWriter.println("QUIT");
             coreWriter.flush();
@@ -279,4 +307,4 @@ public class UIProcess {
 
         simulatorUI.setVisible(true);
     }
-} 
+}
