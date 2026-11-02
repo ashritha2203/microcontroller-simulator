@@ -40,13 +40,19 @@ public class SimulatorUI extends JFrame {
         // Trace area
         traceArea = new JTextArea();
         traceArea.setEditable(false);
-        // Errors area
-        errorsArea = new JTextArea();
-        errorsArea.setEditable(false);
 
         JScrollPane traceScroll = new JScrollPane(traceArea);
         traceScroll.setBorder(
             BorderFactory.createTitledBorder("Trace")
+        );
+
+        // Errors area
+        errorsArea = new JTextArea();
+        errorsArea.setEditable(false);
+
+        JScrollPane errorsScroll = new JScrollPane(errorsArea);
+        errorsScroll.setBorder(
+            BorderFactory.createTitledBorder("Errors")
         );
 
         // Status panel
@@ -158,15 +164,11 @@ public class SimulatorUI extends JFrame {
             );
         });
 
-        // Layout
-        JPanel centerPanel = new JPanel(new GridLayout(1, 2));
+        // Layout: Program, Trace, and Errors
+        JPanel centerPanel = new JPanel(new GridLayout(1, 3));
 
         centerPanel.add(codeScroll);
         centerPanel.add(traceScroll);
-        JScrollPane errorsScroll = new JScrollPane(errorsArea);
-errorsScroll.setBorder(
-    BorderFactory.createTitledBorder("Errors")
-);
         centerPanel.add(errorsScroll);
 
         add(centerPanel, BorderLayout.CENTER);
@@ -180,6 +182,13 @@ errorsScroll.setBorder(
     }
 
     private void loadProgram() {
+
+        // Reset Core before loading the new program.
+        // Do not clear traceArea; preserve the existing trace.
+        String resetResult = controller.sendCommand("RESET");
+        traceArea.append(resetResult + "\n");
+
+        queueArea.setText("Queue: Empty");
 
         String[] lines = codeArea.getText().split("\\n");
 
@@ -253,10 +262,11 @@ errorsScroll.setBorder(
     }
 
     public void appendError(String message) {
-    SwingUtilities.invokeLater(() -> {
-        if (errorsArea != null) {
-            errorsArea.append(message + "\n");
-        }
-    });
-}
+
+        SwingUtilities.invokeLater(() -> {
+            if (errorsArea != null) {
+                errorsArea.append(message + "\n");
+            }
+        });
+    }
 }
