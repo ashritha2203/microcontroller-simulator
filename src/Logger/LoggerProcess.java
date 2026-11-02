@@ -19,7 +19,7 @@ public class LoggerProcess {
 
     private static final int MAX_ERRORS = 50;
 
-    // Outgoing FIFOs: each is opened ONCE and kept open
+    // Outgoing FIFOs: each is opened ONCE (on its own thread) and kept open
     private final OutFifo toCore = new OutFifo(LOGGER_TO_CORE);
     private final OutFifo toUi = new OutFifo(LOGGER_TO_UI);
 
@@ -50,7 +50,26 @@ public class LoggerProcess {
 
     private void readMessages(String fifo, String source) {
 
+        boolean warned = false;
+
         while (!Thread.currentThread().isInterrupted()) {
+
+            // Never read a missing FIFO, or a normal file that is not a FIFO
+            Path p = Paths.get(fifo);
+            if (!Files.exists(p) || Files.isRegularFile(p)) {
+                if (!warned) {
+                    System.err.println("Waiting for FIFO " + fifo + " (run the setup script first)");
+                    warned = true;
+                }
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+                continue;
+            }
+            warned = false;
 
             // Waits here until a writer opens the other end of the FIFO
             try (BufferedReader reader = new BufferedReader(new FileReader(fifo))) {
@@ -105,11 +124,14 @@ public class LoggerProcess {
         }
 
         // 3. Only ERROR messages are forwarded to the UI
+        //    (the log file keeps the full text; the UI gets a cleaner version)
         if (IPCMessage.ERROR.equals(message.getType())) {
 
-            rememberError(message.getText());
+            String shown = message.getText().replaceFirst("^\\[ERROR\\] (ERROR )?", "");
 
-            toUi.send(new IPCMessage("LOGGER", IPCMessage.ERROR, message.getText()));
+            rememberError(shown);
+
+            toUi.send(new IPCMessage("LOGGER", IPCMessage.ERROR, shown));
         }
     }
 
@@ -207,7 +229,8 @@ public class LoggerProcess {
 
             w.println(message.toString());
 
-            if (w.checkError()) {   // the other side left: wait for it to come back
+            if (w.checkError()) {   // the other side left: close it and wait for it to come back
+                w.close();
                 out = null;
                 connect();
             }
