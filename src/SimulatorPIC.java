@@ -38,9 +38,9 @@ public class SimulatorPIC {
         trace.append("PC : ").append(cpu.getPC()).append("\n\n");
         trace.append("Execution Trace\n");
         trace.append("----------------------\n");
-        trace.append("FETCH   ✓\n");
-        trace.append("DECODE  ✓\n");
-        trace.append("EXECUTE ✓\n\n");
+        trace.append("FETCH   \u2713\n");
+        trace.append("DECODE  \u2713\n");
+        trace.append("EXECUTE \u2713\n\n");
         trace.append("Result\n");
         trace.append("----------------------\n");
         trace.append("W = ").append(cpu.getW()).append("\n");
@@ -57,5 +57,5 @@ public class SimulatorPIC {
     public void reset() {
         cpu.reset();
     }
-    
+
 }
