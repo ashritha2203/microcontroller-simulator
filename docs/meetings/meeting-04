@@ -1,0 +1,45 @@
+MINUTES OF MEETING – WEEK 4
+
+Date: 3 October 2026
+Meeting No.: 4
+
+Participants
+
+Ashritha, Nithin, Nihal, Pooja
+
+Agenda
+
+- Review the integration testing results.
+- Discuss benchmarking results.
+- Identify remaining issues and plan the next steps.
+
+Discussion
+
+- We reviewed the integration testing work completed during Week 4.
+- The team discussed testing program execution, STEP, RESET, Stack, Queue, and invalid commands.
+- We discussed testing multiple IPC messages to ensure that replies are received in the correct order.
+- Ashritha discussed the benchmarking of standalone and multi-process execution.
+- The team discussed IPC overhead and communication latency.
+- Nihal discussed the Core process performance and command execution.
+- Pooja discussed the Logger process and communication testing.
+- Nithin discussed the final documentation and recording of the Week 4 progress.
+- We discussed remaining compilation, package, and integration issues.
+
+Decisions
+
+- Complete all remaining integration tests.
+- Fix any remaining package and compilation problems.
+- Complete the benchmark testing and save the results.
+- Verify communication between the Core and Logger processes.
+- Update the project documentation with Week 4 results.
+
+Action Items
+
+- Ashritha: Complete Benchmarking and Integration Test Results
+- Nihal: Finalize Core Process and IPC Communication
+- Pooja: Verify Logger Process Communication
+- Nithin: Complete Documentation, Meetings, and Decisions
+
+Next Meeting
+
+Review the completed Week 4 work, finalize the remaining issues, and plan the next stage of the Microcontroller Simulator project.
