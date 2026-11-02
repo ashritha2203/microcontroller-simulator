@@ -234,8 +234,28 @@ public class UIProcess {
             fifoWriterThread.interrupt();
         }
 
+        // Request graceful shutdown before terminating Core.
         if (coreWriter != null) {
             coreWriter.println("QUIT");
+            coreWriter.flush();
+        }
+
+        if (coreProcess != null) {
+            try {
+                if (!coreProcess.waitFor(2, TimeUnit.SECONDS)) {
+                    coreProcess.destroy();
+
+                    if (!coreProcess.waitFor(1, TimeUnit.SECONDS)) {
+                        coreProcess.destroyForcibly();
+                    }
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                coreProcess.destroyForcibly();
+            }
+        }
+
+        if (coreWriter != null) {
             coreWriter.close();
         }
 
@@ -244,19 +264,6 @@ public class UIProcess {
                 coreReader.close();
             } catch (IOException ignored) {
                 // Stream is already closing.
-            }
-        }
-
-        if (coreProcess != null) {
-            coreProcess.destroy();
-
-            try {
-                if (!coreProcess.waitFor(2, TimeUnit.SECONDS)) {
-                    coreProcess.destroyForcibly();
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                coreProcess.destroyForcibly();
             }
         }
     }
@@ -272,4 +279,4 @@ public class UIProcess {
 
         simulatorUI.setVisible(true);
     }
-}
+} 
