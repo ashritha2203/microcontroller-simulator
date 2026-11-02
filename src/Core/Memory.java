@@ -1,3 +1,4 @@
+package Core;
 public class Memory {
     private CPU cpu;
 

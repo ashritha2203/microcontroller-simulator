@@ -1,3 +1,4 @@
+package Core;
 public class CPU {
 
     private Memory memory;
@@ -32,6 +33,8 @@ public class CPU {
         carryFlag = false;
         dcFlag = false;
         halted = false;
+        stack = new Stack(256);
+        queue = new Queue(256);
     }
 
     public int[] getRegisters() { return registers; }

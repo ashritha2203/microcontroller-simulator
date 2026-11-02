@@ -1,3 +1,4 @@
+package Core;
 public class InstructionSet {
 
     // MOVLW - Move Literal to W

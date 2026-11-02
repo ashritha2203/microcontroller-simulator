@@ -1,0 +1,245 @@
+package Core;
+import java.io.*;
+import java.nio.file.*;
+import java.util.Set;
+import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicLong;
+import shared.IPCMessage;
+
+public class CoreMain {
+
+    // A problem we want to show the user (not a crash)
+    static class CoreError extends RuntimeException {
+        CoreError(String msg) { super(msg); }
+    }
+
+    // ---------- FIFO names (agreed with the team) ----------
+    private static final String CORE_TO_LOGGER = "/tmp/logging_fifo";    // Core writes here
+    private static final String LOGGER_TO_CORE = "/tmp/logger_to_core";  // Core reads acks here
+
+    private static final BlockingQueue<IPCMessage> logQueue = new LinkedBlockingQueue<>(1000);
+    private static final AtomicLong cmdsLogged = new AtomicLong();    // command logs we sent
+    private static final AtomicLong acksReceived = new AtomicLong();  // acks the Logger sent back
+    private static final Set<String> VALID =
+            Set.of("MOVLW", "MOVWF", "ADDWF", "SUBWF", "ANDWF", "INCF", "GOTO", "SLEEP");
+
+    private static boolean fifoExists(String path) {
+        Path p = Paths.get(path);
+        return Files.exists(p) && !Files.isRegularFile(p);
+    }
+
+    // ---------- Thread 1: Core -> Logger ----------
+    private static void startLogSender() {
+        if (!fifoExists(CORE_TO_LOGGER)) {
+            System.err.println("[CORE] No FIFO at " + CORE_TO_LOGGER + " - logging disabled");
+            return;
+        }
+        Thread t = new Thread(() -> {
+            while (true) {
+                if (!fifoExists(CORE_TO_LOGGER)) {          // never open a missing FIFO (it would become a normal file)
+                    try { Thread.sleep(1000); } catch (InterruptedException ie) { return; }
+                    continue;
+                }
+                // Waits here until the Logger opens its end. Only this thread waits, never the CPU.
+                try (PrintWriter out = new PrintWriter(new FileOutputStream(CORE_TO_LOGGER), true)) {
+                    while (true) {
+                        IPCMessage m = logQueue.take();
+                        out.println(m.toString());
+                        if (out.checkError()) break;        // Logger closed its end; reconnect
+                    }
+                } catch (InterruptedException ie) {
+                    return;
+                } catch (Exception e) {
+                    System.err.println("[CORE] Logger link problem: " + e.getMessage());
+                }
+                try { Thread.sleep(1000); } catch (InterruptedException ie) { return; }
+            }
+        }, "log-sender");
+        t.setDaemon(true);
+        t.start();
+    }
+    // ---------- Thread 2: Logger -> Core (acks) ----------
+    private static void startAckReader() {
+        if (!fifoExists(LOGGER_TO_CORE)) {
+            System.err.println("[CORE] No FIFO at " + LOGGER_TO_CORE + " - acks disabled");
+            return;
+        }
+        Thread t = new Thread(() -> {
+            while (true) {
+                // Waits here until the Logger opens its end. The CPU is not affected.
+                try (BufferedReader in = new BufferedReader(new FileReader(LOGGER_TO_CORE))) {
+                    String line;
+                    while ((line = in.readLine()) != null) {
+                        IPCMessage m = IPCMessage.fromString(line);
+                        if (m != null && "ACK".equals(m.getType())) {
+                            acksReceived.incrementAndGet();   // just count it, keep reading
+                        }
+                    }
+                    // null = Logger closed its end; wait for it to come back
+                } catch (Exception e) {
+                    System.err.println("[CORE] Ack link problem: " + e.getMessage());
+                }
+                try { Thread.sleep(500); } catch (InterruptedException ie) { return; }
+            }
+        }, "ack-reader");
+        t.setDaemon(true);
+        t.start();
+    }
+
+    private static void log(String level, String message) {
+        if (level.equals("CMD")) cmdsLogged.incrementAndGet();
+        String type = level.equals("ERROR") ? "ERROR" : "LOG";
+        String text = ("[" + level + "] " + message).replace('\n', ' ').replace('\r', ' ');  // one line only
+        logQueue.offer(new IPCMessage("CORE", type, text));   // never blocks the CPU
+    }
+
+    // ---------- Main thread: UI -> Core -> UI ----------
+    public static void main(String[] args) throws Exception {
+        PrintStream reply = new PrintStream(new FileOutputStream(FileDescriptor.out), true);
+        PrintStream realErr = System.err;
+
+        // Capture prints from Stack/Queue/Processor instead of letting them reach the UI
+        ByteArrayOutputStream captured = new ByteArrayOutputStream();
+        System.setOut(new PrintStream(captured, true));
+
+        BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+        CPU cpu = new CPU();
+        Processor proc = new Processor(cpu);
+
+        startLogSender();
+        startAckReader();
+        log("INFO", "Core started");
+        captured.reset();
+
+        String line;
+        while ((line = in.readLine()) != null) {
+            line = line.trim();
+            if (line.isEmpty()) continue;
+            log("CMD", line);
+
+            String out;
+            try {
+                out = handle(line, cpu, proc);
+            } catch (CoreError e) {
+                out = "ERROR " + e.getMessage();
+            } catch (Exception e) {
+                out = "ERROR " + e.getClass().getSimpleName() + ": " + e.getMessage();
+            }
+
+            // Did Stack/Queue print a warning (full, empty, overflow...)? Turn it into an ERROR reply.
+            String printed = captured.toString().trim();
+            captured.reset();
+            if (!printed.isEmpty()) {
+                realErr.println(printed);
+                String problem = findProblem(printed);
+                if (problem != null && out != null && !out.startsWith("ERROR")) {
+                    out = "ERROR " + problem;
+                }
+            }
+
+            if (out == null) break;                            // QUIT
+            log(out.startsWith("ERROR") ? "ERROR" : "REPLY", out);
+            reply.println(out);                                // Core -> UI
+        }
+
+        log("INFO", "Core stopped");
+        Thread.sleep(300);   // give the log thread time to send the last lines
+    }
+
+    private static String findProblem(String printed) {
+        for (String l : printed.split("\\R")) {
+            if (l.contains("FULL") || l.contains("EMPTY")
+                    || l.contains("Overflow") || l.contains("Underflow")) {
+                return l.trim();
+            }
+        }
+        return null;
+    }
+
+    private static int num(String[] p) {
+        if (p.length < 2) throw new CoreError("missing number after " + p[0]);
+        try {
+            return Integer.parseInt(p[1]);
+        } catch (NumberFormatException e) {
+            throw new CoreError("not a number: " + p[1]);
+        }
+    }
+
+    private static String handle(String line, CPU cpu, Processor proc) {
+        String[] p = line.split("\\s+", 3);
+        String cmd = p[0].toUpperCase();
+
+        switch (cmd) {
+            case "LOAD": {                       // LOAD <addr> <instruction text>
+                if (p.length < 3) return "ERROR usage: LOAD <address> <instruction>";
+                int addr = num(p);
+                if (addr < 0 || addr > 255) return "ERROR address out of range (0-255)";
+                cpu.getProgramMemory()[addr] = p[2];
+                return "OK LOAD " + addr;
+            }
+            case "STEP": {
+                if (cpu.isHalted()) return "HALTED " + state(cpu);
+                if (!canFetch(cpu)) return "ERROR no instruction at address " + cpu.getPC();
+                executeAndLog(cpu, proc);
+                return state(cpu);
+            }
+            case "RUN": {
+                int count = 0;
+                while (!cpu.isHalted() && canFetch(cpu) && count < 100000) {
+                    executeAndLog(cpu, proc);
+                    count++;
+                }
+                return state(cpu) + " steps=" + count;
+            }
+            case "RESET":
+                cpu.reset();
+                return "OK RESET";
+            case "GET_STATE":
+                return state(cpu);
+            case "READMEM": {
+                int a = num(p);
+                if (a < 0 || a > 255) return "ERROR address out of range (0-255)";
+                return "MEM " + a + "=" + cpu.readMemory(a);
+            }
+            case "PUSH":
+                cpu.push(num(p));
+                return "OK SP=" + cpu.getSP();
+            case "POP":
+                return "VALUE " + cpu.pop();
+            case "ENQ":
+                cpu.enqueue(num(p));
+                return "OK ENQ";
+            case "DEQ":
+                return "VALUE " + cpu.dequeue();
+            case "STATS":                        // how many command logs sent / acks received
+                return "STATS cmdsLogged=" + cmdsLogged.get() + " acks=" + acksReceived.get();
+            case "QUIT":
+                return null;
+            default:
+                return "ERROR unknown command: " + cmd;
+        }
+    }
+
+    private static void executeAndLog(CPU cpu, Processor proc) {
+        int pcBefore = cpu.getPC();
+        String instr = cpu.getProgramMemory()[pcBefore].trim();
+        String opcode = instr.split("\\s+")[0].toUpperCase();
+        if (!VALID.contains(opcode)) {
+            throw new CoreError("Unknown instruction '" + opcode + "' at address " + pcBefore);
+        }
+        proc.step();
+        log("EXEC", "pc=" + pcBefore + " " + instr);
+    }
+
+    private static boolean canFetch(CPU cpu) {
+        int pc = cpu.getPC();
+        return pc >= 0 && pc < 256 && cpu.getProgramMemory()[pc] != null;
+    }
+
+    private static String state(CPU cpu) {
+        return "STATE pc=" + cpu.getPC() + " w=" + cpu.getW()
+                + " z=" + cpu.getZeroFlag() + " c=" + cpu.getCarryFlag()
+                + " dc=" + cpu.getDCFlag() + " halted=" + cpu.isHalted()
+                + " sp=" + cpu.getSP();
+    }
+}

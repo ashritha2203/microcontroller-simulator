@@ -1,3 +1,4 @@
+package Core;
 public class Processor {
     private CPU cpu;
     private String currentInstruction;
