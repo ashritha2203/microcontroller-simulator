@@ -1,3 +1,4 @@
+package Core;
 public class Queue {
     private int[] data;      // stores the actual queue values
     private int front;       // index of the item that will be dequeued next
