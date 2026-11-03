@@ -1,4 +1,4 @@
-package Core;
+
 public class Stack {
 
     private int[] stack;

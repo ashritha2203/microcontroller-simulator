@@ -1,4 +1,4 @@
-package integration;
+
 import java.nio.file.*;
 
 public class IntegrationTest {
