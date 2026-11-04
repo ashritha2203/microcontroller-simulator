@@ -1,0 +1,52 @@
+Algorithm
+Part A: Hamming Code Encoding
+1. Start.
+2. Read the 8-bit input data from the user.
+3. Allocate 12 bits for the Hamming code.
+4. Place the 8 data bits in positions 3, 5, 6, 7, 9, 10, 11 and 12.
+5. Reserve positions 1, 2, 4 and 8 for parity bits.
+6. Calculate the first parity bit using positions 1, 3, 5, 7, 9 and 11.
+7. Calculate the second parity bit using positions 2, 3, 6, 7, 10 and 11.
+8. Calculate the third parity bit using positions 4, 5, 6, 7 and 12.
+9. Calculate the fourth parity bit using positions 8, 9, 10, 11 and 12.
+10. Generate the 12-bit Hamming code.
+11. Store the encoded codeword in memory.
+Part B: Error Detection and Correction
+12. Read the encoded 12-bit codeword from memory.
+13. Introduce an error at a selected bit position (optional, for testing).
+14. Calculate the parity checks again.
+15. Calculate the syndrome using the four parity-check results.
+16. Check whether the syndrome is zero.
+17. If the syndrome is zero, no error is detected.
+18. If the syndrome is non-zero, convert the syndrome into a decimal error position.
+19. Identify the incorrect bit position.
+20. Flip the incorrect bit to correct the error.
+21. Store the corrected codeword in another memory location.
+22. Extract the original 8-bit data from the corrected codeword.
+23. Store the recovered data in memory.
+24. Display the original data, encoded codeword, syndrome and corrected data.
+25. Stop.
+
+
+START
+
+Read 8-bit input data
+Place data bits in Hamming positions 3, 5, 6, 7, 9, 10, 11, 12
+Calculate parity bits P1, P2, P4 and P8
+Generate 12-bit Hamming code
+Store encoded codeword in memory
+Read codeword and perform parity checks
+Is syndrome = 0?
+
+YES
+No error detected
+
+NO
+Find error bit position from syndrome
+Flip incorrect bit
+
+
+Store corrected codeword in another memory location
+Extract and store recovered 8-bit data
+Display output
+STOP
