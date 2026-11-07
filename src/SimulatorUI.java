@@ -176,31 +176,63 @@ public class SimulatorUI extends JFrame {
     }
 
     // ---------------- Button actions ----------------
+    
+private void loadProgram() {
 
-    private void loadProgram() {
-        // Start from pc=0 and not halted; the trace is NOT cleared (only Reset clears it)
-        controller.sendCommand("RESET");
+    // Reset CPU before loading a new program
+    controller.sendCommand("RESET");
 
-        String[] lines = codeArea.getText().split("\\n");
-        int count = 0;
-        for (int i = 0; i < lines.length; i++) {
-            if (lines[i].trim().isEmpty()) {
-                continue;
-            }
-            controller.sendCommand("LOAD " + i + " " + lines[i].trim());
-            count++;
+    String[] lines = codeArea.getText().split("\\R");
+
+    int address = 0;
+    int count = 0;
+
+    for (String line : lines) {
+
+        // Remove comments
+        String instruction = line.split(";", 2)[0].trim();
+
+        // Ignore blank lines and comment-only lines
+        if (instruction.isEmpty()) {
+            continue;
         }
-        // Safety stop right after the program, so leftovers from an older, longer
-        // program can never run if the user forgets a final SLEEP
-        if (lines.length < 256) {
-            controller.sendCommand("LOAD " + lines.length + " SLEEP");
+
+        if (address >= 255) {
+            errorsArea.append("Program is too large!\n");
+            return;
         }
 
-        traceArea.append("Program loaded: " + count + " instruction(s)\n\n");
-        traceArea.setCaretPosition(traceArea.getDocument().getLength());
-        refreshAll(controller.sendCommand("GET_STATE"));
+        String result = controller.sendCommand(
+            "LOAD " + address + " " + instruction
+        );
+
+        if (result == null || !result.startsWith("OK")) {
+            errorsArea.append("Load failed at address "
+                + address + ": " + result + "\n");
+            return;
+        }
+
+        address++;
+        count++;
     }
 
+    // Add a safety SLEEP instruction after the program
+    controller.sendCommand("LOAD " + address + " SLEEP");
+
+    traceArea.append(
+        "Program loaded: " + count + " instruction(s)\n"
+    );
+
+    traceArea.append(
+        "Program addresses: 0 to " + (address - 1) + "\n\n"
+    );
+
+    traceArea.setCaretPosition(
+        traceArea.getDocument().getLength()
+    );
+
+    refreshAll(controller.sendCommand("GET_STATE"));
+}
     private void step() {
         int oldPc = currentPc;
         String instr = instructionAt(oldPc);
