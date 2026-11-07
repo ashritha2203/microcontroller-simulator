@@ -21,7 +21,8 @@ public class CoreMain {
     private static final AtomicLong cmdsLogged = new AtomicLong();    // command logs we sent
     private static final AtomicLong acksReceived = new AtomicLong();  // acks the Logger sent back
     private static final Set<String> VALID =
-            Set.of("MOVLW", "MOVWF", "ADDWF", "SUBWF", "ANDWF", "INCF", "GOTO", "SLEEP");
+            Set.of("MOVLW", "MOVWF", "ADDWF", "SUBWF", "ANDWF", "INCF", "XORWF", "XORLW",
+                      "BTFSC", "BTFSS", "GOTO", "SLEEP");
 
     private static boolean fifoExists(String path) {
         Path p = Paths.get(path);
@@ -221,16 +222,37 @@ public class CoreMain {
     }
 
     private static void executeAndLog(CPU cpu, Processor proc) {
-        int pcBefore = cpu.getPC();
-        String instr = cpu.getProgramMemory()[pcBefore].trim();
-        String opcode = instr.split("\\s+")[0].toUpperCase();
-        if (!VALID.contains(opcode)) {
-            throw new CoreError("Unknown instruction '" + opcode + "' at address " + pcBefore);
-        }
+
+    int pcBefore = cpu.getPC();
+
+    String instr = cpu.getProgramMemory()[pcBefore];
+
+    // Remove comments
+    String cleanInstruction = instr.split(";", 2)[0].trim();
+
+    // Skip blank lines and comment-only lines
+    // while preserving their program-memory addresses
+    if (cleanInstruction.isEmpty()) {
         proc.step();
-        log("EXEC", "pc=" + pcBefore + " " + instr);
+        return;
     }
 
+    String opcode = cleanInstruction
+            .split("\\s+")[0]
+            .toUpperCase();
+
+    // Validate instruction
+    if (!VALID.contains(opcode)) {
+        throw new CoreError(
+            "Unknown instruction '" + opcode +
+            "' at address " + pcBefore
+        );
+    }
+
+    proc.step();
+
+    log("EXEC", "pc=" + pcBefore + " " + cleanInstruction);
+}
     private static boolean canFetch(CPU cpu) {
         int pc = cpu.getPC();
         return pc >= 0 && pc < 256 && cpu.getProgramMemory()[pc] != null;
