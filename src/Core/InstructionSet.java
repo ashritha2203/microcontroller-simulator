@@ -24,10 +24,8 @@ public class InstructionSet {
     }
 
     // XORWF - XOR W with File Register
-    // Result stored in W
     public static void XORWF(int regIndex, CPU cpu) {
         int result = cpu.getW() ^ cpu.getRegister(regIndex);
-
         cpu.setZeroFlag(result == 0);
         cpu.setW(result);
     }
@@ -35,16 +33,13 @@ public class InstructionSet {
     // XORLW - XOR W with Literal
     public static void XORLW(int literal, CPU cpu) {
         int result = cpu.getW() ^ (literal & 0xFF);
-
         cpu.setZeroFlag(result == 0);
         cpu.setW(result);
     }
 
     // ANDWF - Logical AND
-    // Result stored in W
     public static void ANDWF(int regIndex, CPU cpu) {
         int result = cpu.getW() & cpu.getRegister(regIndex);
-
         cpu.setZeroFlag(result == 0);
         cpu.setW(result);
     }
@@ -52,7 +47,6 @@ public class InstructionSet {
     // INCF - Increment File Register
     public static void INCF(int regIndex, CPU cpu) {
         int result = (cpu.getRegister(regIndex) + 1) & 0xFF;
-
         cpu.setZeroFlag(result == 0);
         cpu.setRegister(regIndex, result);
     }
@@ -60,7 +54,6 @@ public class InstructionSet {
     // BTFSC - Skip next instruction if bit is clear
     public static void BTFSC(int regIndex, int bit, CPU cpu) {
         checkBit(bit);
-
         if (((cpu.getRegister(regIndex) >> bit) & 1) == 0) {
             cpu.incrementPC();
         }
@@ -69,7 +62,6 @@ public class InstructionSet {
     // BTFSS - Skip next instruction if bit is set
     public static void BTFSS(int regIndex, int bit, CPU cpu) {
         checkBit(bit);
-
         if (((cpu.getRegister(regIndex) >> bit) & 1) == 1) {
             cpu.incrementPC();
         }
@@ -83,11 +75,10 @@ public class InstructionSet {
                 "Invalid program address: " + address
             );
         }
-
         cpu.setPC(address);
     }
 
-       // SLEEP - Halt execution
+    // SLEEP - Halt execution
     public static void SLEEP(CPU cpu) {
         cpu.setHalted(true);
     }
