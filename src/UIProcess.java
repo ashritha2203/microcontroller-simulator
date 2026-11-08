@@ -49,7 +49,7 @@ public class UIProcess {
                     + File.separator + "bin"
                     + File.separator + "java";
 
-            String corePath = new File("bin", "Core").getAbsolutePath();
+            String corePath = new File("bin").getAbsolutePath();
             String mainPath = new File("bin").getAbsolutePath();
 
             String classPath = corePath
