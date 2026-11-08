@@ -12,7 +12,7 @@ public class CoreClient {
         String java = System.getProperty("java.home")
                 + File.separator + "bin" + File.separator + "java";
 
-       p = new ProcessBuilder(java, "-cp", "bin", "Core.CoreMain")
+       p = new ProcessBuilder(java, "-cp", "bin", "CoreMain")
                 .redirectError(ProcessBuilder.Redirect.DISCARD)
                 .start();
 
